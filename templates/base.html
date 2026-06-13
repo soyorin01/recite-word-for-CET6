@@ -1,0 +1,923 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>{% block title %}六级词汇背诵{% endblock %} · 拾词记</title>
+<meta name="description" content="专为大学生六级备考和Python学习者设计的背单词工具" />
+<link rel="preconnect" href="https://fonts.googleapis.com" />
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+SC:wght@400;500;600;700&display=swap" rel="stylesheet" />
+<link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}" />
+{% block head_extra %}{% endblock %}
+</head>
+<body>
+
+<!-- ====== 全局系统（必须在页面脚本之前加载）====== -->
+<script>
+// ====== 全局猫粮 / 好感度 / 投喂系统 ======
+(function() {
+  const FOOD_KEY = 'pyword_cat_food';
+  const AFF_KEY = 'pyword_affection';
+  const SHOP_KEY = 'pyword_shop';
+  const EQUIP_KEY = 'pyword_equipped';
+  const CHECKIN_KEY = 'pyword_last_checkin';
+  const FEED_LOG_KEY = 'pyword_feed_log';
+
+  function gd(key, def) { try { return JSON.parse(localStorage.getItem(key)) || def; } catch(e) { return def; } }
+  function sd(key, val) { localStorage.setItem(key, JSON.stringify(val)); }
+
+  // 猫粮
+  window.getCatFood = function() { return gd(FOOD_KEY, 0); };
+  window.addCatFood = function(n) { sd(FOOD_KEY, gd(FOOD_KEY, 0) + n); };
+  window.spendCatFood = function(n) {
+    if (gd(FOOD_KEY, 0) < n) return false;
+    sd(FOOD_KEY, gd(FOOD_KEY, 0) - n); return true;
+  };
+
+  // 好感度 (0-1000)
+  window.getAffection = function() { return gd(AFF_KEY, 0); };
+  window.addAffection = function(n) {
+    const cur = Math.min(1000, gd(AFF_KEY, 0) + n);
+    sd(AFF_KEY, cur);
+    // 更新所有好感度显示
+    document.querySelectorAll('.aff-value').forEach(el => el.textContent = cur);
+    document.querySelectorAll('.aff-bar-inner').forEach(el => el.style.width = (cur / 10) + '%');
+  };
+
+  // 好感等级
+  window.getAffLevel = function(val) {
+    const v = val !== undefined ? val : gd(AFF_KEY, 0);
+    if (v >= 800) return { name: '挚友', emoji: '💕', color: '#E84393' };
+    if (v >= 500) return { name: '亲密', emoji: '❤️', color: '#E8453A' };
+    if (v >= 250) return { name: '友好', emoji: '💛', color: '#F39C12' };
+    if (v >= 100) return { name: '熟悉', emoji: '🧡', color: '#E67E22' };
+    return { name: '陌生', emoji: '🤍', color: '#95A5A6' };
+  };
+
+  // 赚猫粮
+  window.earnCatFood = function(action) {
+    const rewards = {
+      review_correct: 3, review_wrong: 1, learn_new: 5,
+      spell_correct: 4, daily_checkin: 10, complete_session: 8,
+      chat: 1, feed: 5,
+    };
+    const amount = rewards[action] || 0;
+    if (amount > 0) {
+      addCatFood(amount);
+      addAffection(action === 'chat' ? 3 : action === 'feed' ? 8 : 2);
+      if (typeof PyWord !== 'undefined' && PyWord.toast) {
+        PyWord.toast('🪙 +' + amount + ' 猫粮', 'success');
+      }
+    }
+  };
+
+  // 投喂
+  window.feedPet = function(foodId, foodEmoji, foodName) {
+    const owned = gd(SHOP_KEY, []);
+    const idx = owned.indexOf(foodId);
+    if (idx === -1) return;
+    owned.splice(idx, 1);
+    sd(SHOP_KEY, owned);
+    // 根据食物类型给不同好感度
+    const items = getAllItems();
+    const foodItem = items.find(i => i.id === foodId);
+    const affGain = (foodItem && foodItem.feedAff) ? foodItem.feedAff : 8;
+    addAffection(affGain);
+    // 记录投喂
+    const log = gd(FEED_LOG_KEY, []);
+    log.push({ food: foodId, emoji: foodEmoji, name: foodName, aff: affGain, time: Date.now() });
+    if (log.length > 50) log.splice(0, log.length - 50);
+    sd(FEED_LOG_KEY, log);
+    if (typeof PyWord !== 'undefined' && PyWord.toast) {
+      PyWord.toast('投喂了 ' + foodEmoji + ' ' + foodName + '！好感度 +' + affGain + ' 💕', 'success');
+    }
+    // 触发投喂动画
+    const avatar = document.getElementById('petWidgetAvatar');
+    if (avatar) {
+      avatar.style.transform = 'scale(1.15)';
+      setTimeout(() => avatar.style.transform = '', 400);
+    }
+    // 更新商店页（如果打开）
+    if (typeof renderShop === 'function') renderShop();
+    if (typeof renderFeedPanel === 'function') renderFeedPanel();
+  };
+
+  // 商品数据（全局可用）
+  window.getAllItems = function() {
+    return [
+      { id: "hat_bowler",  name: "绅士礼帽",   category: "hat",  price: 50,  emoji: "🎩", desc: "月薪喵秒变英伦绅士", bonus: { charm: 5 } },
+      { id: "hat_crown",   name: "国王皇冠",   category: "hat",  price: 200, emoji: "👑", desc: "词汇之王才配拥有", bonus: { charm: 15 } },
+      { id: "hat_witch",   name: "魔法尖帽",   category: "hat",  price: 80,  emoji: "🧙", desc: "Abra-cadabra!", bonus: { int: 8 } },
+      { id: "hat_santa",   name: "圣诞帽",     category: "hat",  price: 60,  emoji: "🎅", desc: "Merry Christmas!", bonus: { charm: 3 } },
+      { id: "cloth_tuxedo",name: "燕尾服",     category: "cloth", price: 150, emoji: "🤵", desc: "六级考场最靓的喵", bonus: { charm: 10 } },
+      { id: "cloth_hawaii",name: "夏威夷花衬衫",category: "cloth", price: 70,  emoji: "🌺", desc: "考完六级去度假", bonus: { energy: 8 } },
+      { id: "cloth_armor", name: "骑士铠甲",   category: "cloth", price: 180, emoji: "🛡️", desc: "全副武装上考场", bonus: { int: 5, energy: 10 } },
+      { id: "cloth_hanfu", name: "汉服",       category: "cloth", price: 100, emoji: "👘", desc: "学贯中西的喵", bonus: { charm: 7, int: 3 } },
+      { id: "acc_glasses", name: "学霸眼镜",   category: "acc",  price: 40,  emoji: "🤓", desc: "智力 +10", bonus: { int: 10 } },
+      { id: "acc_wand",    name: "魔法棒",     category: "acc",  price: 90,  emoji: "🪄", desc: "点石成金！", bonus: { int: 8, charm: 5 } },
+      { id: "acc_book",    name: "厚厚词典",   category: "acc",  price: 30,  emoji: "📖", desc: "知识就是力量", bonus: { int: 12 } },
+      { id: "acc_trophy",  name: "金奖杯",     category: "acc",  price: 300, emoji: "🏆", desc: "六级满分的象征", bonus: { int: 10, charm: 10, energy: 10 } },
+      { id: "food_fish",   name: "小鱼干",     category: "food", price: 10,  emoji: "🐟", desc: "打工喵的最爱", feedAff: 5, bonus: { energy: 5 } },
+      { id: "food_cake",   name: "草莓蛋糕",   category: "food", price: 25,  emoji: "🍰", desc: "甜蜜好心情", feedAff: 10, bonus: { charm: 5 } },
+      { id: "food_coffee", name: "拿铁咖啡",   category: "food", price: 20,  emoji: "☕", desc: "提神醒脑背单词", feedAff: 8, bonus: { int: 5 } },
+      { id: "food_sushi",  name: "豪华寿司",   category: "food", price: 35,  emoji: "🍣", desc: "犒劳努力的自己", feedAff: 15, bonus: { int: 3, charm: 3, energy: 3 } },
+      { id: "food_milk",   name: "香浓牛奶",   category: "food", price: 15,  emoji: "🥛", desc: "补充能量继续学", feedAff: 6, bonus: { energy: 8 } },
+      { id: "food_candy",  name: "彩虹糖果",   category: "food", price: 8,   emoji: "🍬", desc: "一颗糖一天甜", feedAff: 3, bonus: { charm: 3 } },
+      { id: "food_steak",  name: "猫咪牛排",   category: "food", price: 50,  emoji: "🥩", desc: "考前大餐补充体力", feedAff: 20, bonus: { int: 5, charm: 5, energy: 5 } },
+      { id: "food_boba",   name: "珍珠奶茶",   category: "food", price: 18,  emoji: "🧋", desc: "喵也爱喝奶茶", feedAff: 7, bonus: { charm: 4, energy: 2 } },
+      { id: "food_cookie", name: "曲奇饼干",   category: "food", price: 12,  emoji: "🍪", desc: "课间小零食", feedAff: 4, bonus: { energy: 3 } },
+      { id: "food_honey",  name: "蜂蜜罐子",   category: "food", price: 22,  emoji: "🍯", desc: "甜甜的化在心头", feedAff: 9, bonus: { int: 3, charm: 3 } },
+    ];
+  };
+
+  // 获取装备属性加成
+  window.getEquipBonus = function() {
+    const equipped = gd(EQUIP_KEY, {});
+    const items = getAllItems();
+    const bonus = { int: 0, charm: 0, energy: 0 };
+    Object.values(equipped).forEach(id => {
+      const item = items.find(i => i.id === id);
+      if (item && item.bonus) {
+        if (item.bonus.int) bonus.int += item.bonus.int;
+        if (item.bonus.charm) bonus.charm += item.bonus.charm;
+        if (item.bonus.energy) bonus.energy += item.bonus.energy;
+      }
+    });
+    return bonus;
+  };
+
+  // 签到
+  window.doCheckin = function() {
+    const today = new Date().toISOString().slice(0, 10);
+    if (localStorage.getItem(CHECKIN_KEY) === today) {
+      if (typeof PyWord !== 'undefined' && PyWord.toast) {
+        PyWord.toast('今天已经签到过啦～', 'info');
+      }
+      return;
+    }
+    localStorage.setItem(CHECKIN_KEY, today);
+    addCatFood(10);
+    addAffection(5);
+    if (typeof PyWord !== 'undefined' && PyWord.toast) {
+      PyWord.toast('签到成功！+10 猫粮 +5 好感 🎉', 'success');
+    }
+  };
+})();
+
+// ====== 主题切换 ======
+(function() {
+  const stored = localStorage.getItem('pyword-theme');
+  const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+  const initialTheme = stored || (prefersDark ? 'dark' : 'light');
+  document.documentElement.setAttribute('data-theme', initialTheme);
+  window.__pendingThemeBtn = initialTheme;
+})();
+
+// 全局工具函数
+var PyWord = {
+  playAudio(word) {
+    const url = `https://dict.youdao.com/dictvoice?type=2&audio=${encodeURIComponent(word)}`;
+    const audio = new Audio(url);
+    audio.play().catch(() => {
+      if ('speechSynthesis' in window) {
+        const utter = new SpeechSynthesisUtterance(word);
+        utter.lang = 'en-US';
+        speechSynthesis.speak(utter);
+      }
+    });
+  },
+
+  async submitResult(wordId, result, responseTime = null) {
+    try {
+      const res = await fetch('/api/review/result', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ word_id: wordId, result, response_time: responseTime })
+      });
+      const data = await res.json();
+      // 赚猫粮
+      if (data.success && typeof earnCatFood === 'function') {
+        if (result === 'correct') earnCatFood('review_correct');
+        else if (result === 'wrong') earnCatFood('review_wrong');
+        else if (result === 'ambiguous') earnCatFood('review_wrong');
+      }
+      return data;
+    } catch (e) {
+      console.error('Submit failed:', e);
+      return { success: false };
+    }
+  },
+
+  toast(message, type = 'info') {
+    const el = document.createElement('div');
+    el.className = `toast toast-${type}`;
+    el.textContent = message;
+    document.body.appendChild(el);
+    setTimeout(() => {
+      el.style.opacity = '0';
+      el.style.transition = 'opacity .3s ease';
+      setTimeout(() => el.remove(), 300);
+    }, 2000);
+  },
+
+  confetti(count = 50) {
+    const container = document.createElement('div');
+    container.className = 'confetti-container';
+    document.body.appendChild(container);
+    const colors = ['#E8453A','#F39C12','#27AE60','#7B5BFF','#f7a072','#ffd166','#06d6a0','#ef476f'];
+    for (let i = 0; i < count; i++) {
+      const p = document.createElement('div');
+      p.className = 'confetti-piece';
+      p.style.left = Math.random() * 100 + '%';
+      p.style.top = -(Math.random() * 20) + 'px';
+      p.style.background = colors[Math.floor(Math.random() * colors.length)];
+      p.style.width = (Math.random() * 10 + 6) + 'px';
+      p.style.height = (Math.random() * 8 + 4) + 'px';
+      p.style.animationDelay = Math.random() * 0.8 + 's';
+      p.style.animationDuration = (Math.random() * 1.5 + 2) + 's';
+      container.appendChild(p);
+    }
+    setTimeout(() => container.remove(), 3500);
+  }
+};
+</script>
+
+<!-- 顶部导航 -->
+<nav class="nav-wrap">
+  <div class="nav">
+    <a href="/" class="brand">
+      <div class="brand-mark">
+        <svg viewBox="0 0 32 32" fill="none" xmlns="http://www.w3.org/2000/svg">
+          <rect width="32" height="32" rx="8" fill="var(--accent)"/>
+          <text x="50%" y="55%" dominant-baseline="middle" text-anchor="middle"
+                fill="white" font-size="14" font-weight="700" font-family="Noto Sans SC, sans-serif">拾</text>
+        </svg>
+      </div>
+      <span>拾词记</span>
+    </a>
+
+    <div class="nav-links">
+      <a href="/" class="nav-link {% if request.path == '/' %}active{% endif %}">看板</a>
+      <a href="/review" class="nav-link {% if request.path == '/review' %}active{% endif %}">复习</a>
+      <a href="/learn" class="nav-link {% if request.path == '/learn' %}active{% endif %}">学新词</a>
+      <a href="/spell" class="nav-link {% if request.path == '/spell' %}active{% endif %}">拼写</a>
+      <a href="/mistakes" class="nav-link {% if request.path == '/mistakes' %}active{% endif %}">❌ 错题本</a>
+      <a href="/stats" class="nav-link {% if request.path == '/stats' %}active{% endif %}">数据</a>
+      <a href="/writing" class="nav-link {% if request.path == '/writing' %}active{% endif %}">✍️ 写作</a>
+      <a href="/pet" class="nav-link {% if request.path == '/pet' %}active{% endif %}">🐱 月薪喵</a>
+      <a href="/shop" class="nav-link {% if request.path == '/shop' %}active{% endif %}">🏪 商店</a>
+    </div>
+
+    <div class="nav-cta">
+      <span class="badge-python" title="Python课程作业版">🐍 Python Edition</span>
+      <button class="theme-toggle" id="themeToggle" title="切换主题">☀️</button>
+    </div>
+  </div>
+</nav>
+
+<!-- 主内容区 -->
+<main class="main">
+  {% block content %}{% endblock %}
+</main>
+
+<!-- 底部 -->
+<footer class="footer">
+  <div class="container">
+    <p>拾词记 · Python课程作业版 · 温馨的六级词汇背诵工具 🐍</p>
+    <p class="footer-note">记忆算法：艾宾浩斯遗忘曲线 + 间隔重复 · 三步学习法（选择→详解→巩固）</p>
+  </div>
+</footer>
+
+<!-- ====== 月薪喵桌宠挂件 ====== -->
+<div class="pet-widget" id="petWidget">
+  <div class="pet-widget-avatar" id="petWidgetAvatar" title="拖动我，或点击聊天">
+    <img src="{{ url_for('static', filename='pet_assets/maomao_ref.jpg') }}" alt="月薪喵" id="widgetImg" />
+    <div class="widget-badge" id="widgetBadge">💬</div>
+    <!-- 情绪气泡 -->
+    <div class="mood-bubble" id="moodBubble"></div>
+    <!-- 好感度小条 -->
+    <div class="widget-aff" id="widgetAff">
+      <span class="widget-aff-emoji" id="widgetAffEmoji">🤍</span>
+      <span class="widget-aff-val" id="widgetAffVal">0</span>
+    </div>
+  </div>
+
+  <div class="pet-widget-chat" id="petWidgetChat">
+    <div class="widget-chat-header">
+      <span>🐱 月薪喵</span>
+      <div class="widget-header-actions">
+        <button class="widget-btn" id="widgetFeedBtn" title="投喂">🍽</button>
+        <button class="widget-btn" id="widgetClear" title="清空对话">🗑</button>
+        <button class="widget-btn" id="widgetClose" title="收起">✕</button>
+      </div>
+    </div>
+    <div class="widget-chat-body" id="widgetChatBody">
+      <div class="widget-msg widget-msg-momo">
+        <div class="widget-msg-bubble">
+          你好呀！我是月薪喵 🐾 有英语问题随时问我～
+        </div>
+      </div>
+    </div>
+    <div class="widget-chat-footer">
+      <div class="widget-feed-panel" id="widgetFeedPanel">
+        <div class="widget-feed-title">🍽 投喂月薪喵</div>
+        <div class="widget-feed-items" id="widgetFeedItems"></div>
+      </div>
+      <div class="widget-quick-chips">
+        <button onclick="widgetSendQuick('abandon 是什么意思？')">abandon</button>
+        <button onclick="widgetSendQuick('推荐六级作文句型')">作文句型</button>
+        <button onclick="widgetSendQuick('纠正语法：I very like English.')">语法纠错</button>
+      </div>
+      <div class="widget-input-row">
+        <textarea
+          id="widgetInput"
+          rows="1"
+          placeholder="问月薪喵英语问题..."
+          onkeydown="if(event.key==='Enter' && !event.shiftKey){event.preventDefault();widgetSendMessage();}"
+        ></textarea>
+        <button class="widget-send" id="widgetSend" onclick="widgetSendMessage()">发送</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<style>
+/* ====== 桌宠挂件 ====== */
+.pet-widget {
+  position: fixed;
+  right: 24px; bottom: 24px;
+  z-index: 9999;
+  display: flex; flex-direction: column; align-items: flex-end;
+  gap: 10px;
+  user-select: none;
+  pointer-events: none;
+}
+
+/* 小头像 */
+.pet-widget-avatar {
+  width: 64px; height: 64px;
+  border-radius: 50%;
+  background: #fff;
+  box-shadow: 0 4px 20px rgba(0,0,0,0.15), 0 0 0 3px rgba(249,213,110,0.4);
+  cursor: grab;
+  position: relative;
+  display: grid; place-items: center;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  animation: widgetBounce 3s ease-in-out infinite;
+  pointer-events: auto;
+}
+.pet-widget-avatar:hover {
+  transform: scale(1.08);
+  box-shadow: 0 6px 24px rgba(0,0,0,0.2), 0 0 0 4px rgba(249,213,110,0.6);
+}
+.pet-widget-avatar:active { cursor: grabbing; }
+.pet-widget-avatar img {
+  width: 56px; height: 56px;
+  object-fit: contain;
+  border-radius: 50%;
+  pointer-events: none;
+  image-rendering: pixelated;
+  image-rendering: crisp-edges;
+}
+.widget-badge {
+  position: absolute; top: -4px; right: -4px;
+  width: 22px; height: 22px;
+  background: var(--accent);
+  color: #fff; font-size: 12px;
+  border-radius: 50%;
+  display: grid; place-items: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  opacity: 0; transform: scale(0);
+  transition: all 0.2s ease;
+}
+.widget-badge.show { opacity: 1; transform: scale(1); }
+
+/* 好感度小条 */
+.widget-aff {
+  position: absolute; bottom: -8px; left: 50%; transform: translateX(-50%);
+  background: rgba(0,0,0,0.55); color: #fff;
+  font-size: 10px; padding: 2px 8px;
+  border-radius: 10px; pointer-events: none;
+  display: flex; align-items: center; gap: 3px;
+  white-space: nowrap;
+}
+.widget-aff-emoji { font-size: 10px; }
+.widget-aff-val { font-weight: 600; }
+
+/* 投喂面板 */
+.widget-feed-panel {
+  padding: 10px 12px; border-top: 1px solid var(--border-soft);
+  background: var(--surface-1); display: none;
+}
+.widget-feed-panel.open { display: block; }
+.widget-feed-title { font-size: 12px; font-weight: 600; color: var(--ink-muted); margin-bottom: 8px; }
+.widget-feed-items { display: flex; gap: 8px; flex-wrap: wrap; }
+.widget-feed-item {
+  display: flex; align-items: center; gap: 4px;
+  padding: 5px 10px; border-radius: var(--r-pill);
+  border: 1px solid var(--border); background: var(--surface-card);
+  font-size: 12px; cursor: pointer; transition: all .15s;
+}
+.widget-feed-item:hover { border-color: var(--accent); }
+.widget-feed-item .feed-emoji { font-size: 14px; }
+.widget-feed-item .feed-name { color: var(--ink-soft); }
+.widget-feed-empty { font-size: 12px; color: var(--ink-muted); text-align: center; padding: 8px 0; }
+
+/* 情绪气泡 */
+.mood-bubble {
+  position: absolute;
+  top: -36px; left: 50%; transform: translateX(-50%);
+  background: var(--surface-card);
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  padding: 6px 12px;
+  font-size: 12px; line-height: 1.4;
+  color: var(--ink-soft);
+  white-space: nowrap;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.1);
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s ease, transform 0.3s ease;
+  z-index: 10;
+}
+.mood-bubble.show {
+  opacity: 1;
+  transform: translateX(-50%) translateY(-4px);
+}
+.mood-bubble::after {
+  content: "";
+  position: absolute; bottom: -6px; left: 50%; transform: translateX(-50%);
+  width: 0; height: 0;
+  border-left: 6px solid transparent;
+  border-right: 6px solid transparent;
+  border-top: 6px solid var(--surface-card);
+  filter: drop-shadow(0 2px 2px rgba(0,0,0,0.05));
+}
+
+@keyframes widgetBounce {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-5px); }
+}
+
+/* 聊天面板 */
+.pet-widget-chat {
+  width: 340px; height: 420px;
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  box-shadow: 0 12px 40px rgba(0,0,0,0.18);
+  display: flex; flex-direction: column;
+  overflow: hidden;
+  opacity: 0; transform: scale(0.9) translateY(20px);
+  pointer-events: none;
+  transition: all 0.25s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transform-origin: bottom right;
+}
+.pet-widget-chat.open {
+  opacity: 1; transform: scale(1) translateY(0);
+  pointer-events: auto !important;
+}
+
+.widget-chat-header {
+  display: flex; justify-content: space-between; align-items: center;
+  padding: 12px 14px;
+  background: linear-gradient(90deg, #F9D56E, #F5C842);
+  color: #5A3D00;
+  font-weight: 700; font-size: 14px;
+}
+.widget-header-actions { display: flex; gap: 6px; }
+.widget-btn {
+  width: 32px; height: 32px;
+  border: none; border-radius: 50%;
+  background: rgba(255,255,255,0.35);
+  color: #5A3D00;
+  cursor: pointer; font-size: 15px;
+  display: grid; place-items: center;
+  transition: background 0.15s, transform 0.15s;
+}
+.widget-btn:hover { background: rgba(255,255,255,0.6); transform: scale(1.1); }
+
+.widget-chat-body {
+  flex: 1; overflow-y: auto;
+  padding: 14px;
+  display: flex; flex-direction: column; gap: 10px;
+  background: var(--surface-1);
+}
+.widget-msg { display: flex; animation: fadeInUp 0.25s ease; }
+.widget-msg-momo { justify-content: flex-start; }
+.widget-msg-user { justify-content: flex-end; }
+.widget-msg-bubble {
+  max-width: 78%;
+  padding: 10px 14px; border-radius: 16px;
+  font-size: 13px; line-height: 1.55;
+  background: var(--surface-card);
+  color: var(--ink-soft);
+  border: 1px solid var(--border-soft);
+  word-break: break-word;
+}
+.widget-msg-user .widget-msg-bubble {
+  background: var(--accent); color: #fff; border-color: var(--accent);
+}
+
+.widget-chat-footer {
+  padding: 10px 12px 12px;
+  border-top: 1px solid var(--border-soft);
+  background: var(--surface-card);
+}
+.widget-quick-chips {
+  display: flex; gap: 6px; flex-wrap: wrap;
+  margin-bottom: 8px;
+}
+.widget-quick-chips button {
+  padding: 4px 10px;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: var(--surface-1);
+  color: var(--ink-muted);
+  font-size: 11px; cursor: pointer;
+  transition: all 0.15s;
+}
+.widget-quick-chips button:hover { border-color: var(--accent); color: var(--accent); }
+.widget-input-row {
+  display: flex; gap: 8px; align-items: flex-end;
+}
+.widget-input-row textarea {
+  flex: 1; resize: none;
+  padding: 9px 12px;
+  border: 1.5px solid var(--border);
+  border-radius: 14px;
+  background: var(--surface-1);
+  color: var(--ink); font-size: 13px; line-height: 1.45;
+  font-family: inherit;
+  min-height: 38px; max-height: 90px;
+  transition: border-color 0.2s;
+}
+.widget-input-row textarea:focus {
+  outline: none; border-color: var(--accent);
+}
+.widget-send {
+  padding: 9px 16px;
+  border: none; border-radius: 12px;
+  background: var(--accent); color: #fff;
+  font-size: 13px; font-weight: 600;
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+.widget-send:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.widget-typing {
+  display: flex; gap: 3px; padding: 4px 0;
+}
+.widget-typing span {
+  width: 6px; height: 6px; border-radius: 50%;
+  background: var(--ink-dim);
+  animation: typingBounce 1.4s ease-in-out infinite;
+}
+.widget-typing span:nth-child(2) { animation-delay: 0.2s; }
+.widget-typing span:nth-child(3) { animation-delay: 0.4s; }
+
+/* 拖拽时不显示动画 */
+.pet-widget.dragging .pet-widget-avatar {
+  animation: none;
+  cursor: grabbing;
+}
+
+@media (max-width: 640px) {
+  .pet-widget-chat {
+    width: calc(100vw - 32px);
+    height: 360px;
+    position: fixed;
+    right: 16px; bottom: 90px;
+  }
+}
+</style>
+
+<script>
+// ====== 月薪喵桌宠挂件 ======
+(function() {
+  const widget = document.getElementById('petWidget');
+  const avatar = document.getElementById('petWidgetAvatar');
+  const chat = document.getElementById('petWidgetChat');
+  const closeBtn = document.getElementById('widgetClose');
+  const clearBtn = document.getElementById('widgetClear');
+  const sendBtn = document.getElementById('widgetSend');
+  const input = document.getElementById('widgetInput');
+  const body = document.getElementById('widgetChatBody');
+  const badge = document.getElementById('widgetBadge');
+  const widgetImg = document.getElementById('widgetImg');
+
+  // 表情轮播
+  const widgetAssets = [
+    "{{ url_for('static', filename='pet_assets/maomao_ref.jpg') }}"
+    {% for asset in pet_assets %}
+    {% if asset != 'maomao_ref.jpg' %}
+    , "{{ url_for('static', filename='pet_assets/' ~ asset) }}"
+    {% endif %}
+    {% endfor %}
+  ];
+  let imgIdx = 0;
+  let isFirstCycle = true;
+  setInterval(() => {
+    if (isFirstCycle) {
+      // 第一次切换从 ref 跳到随机一张
+      isFirstCycle = false;
+      imgIdx = 1 + Math.floor(Math.random() * (widgetAssets.length - 1));
+    } else {
+      // 之后随机切换，避免连续重复
+      let next;
+      do { next = 1 + Math.floor(Math.random() * (widgetAssets.length - 1)); } while (next === imgIdx && widgetAssets.length > 2);
+      imgIdx = next;
+    }
+    widgetImg.src = widgetAssets[imgIdx];
+  }, 3500);
+
+  // 展开/收起
+  let isOpen = false;
+  function toggleChat(force) {
+    isOpen = force !== undefined ? force : !isOpen;
+    chat.classList.toggle('open', isOpen);
+    if (isOpen) {
+      badge.classList.remove('show');
+      setTimeout(() => input.focus(), 100);
+    }
+  }
+
+  avatar.addEventListener('click', (e) => {
+    if (!dragging) toggleChat();
+  });
+  closeBtn.addEventListener('click', () => toggleChat(false));
+
+  // 清空对话
+  clearBtn.addEventListener('click', () => {
+    localStorage.removeItem(STORAGE_KEY);
+    body.innerHTML = `
+      <div class="widget-msg widget-msg-momo">
+        <div class="widget-msg-bubble">对话清空啦！我是月薪喵 🐾</div>
+      </div>
+    `;
+  });
+
+  // 投喂按钮
+  const feedBtn = document.getElementById('widgetFeedBtn');
+  const feedPanel = document.getElementById('widgetFeedPanel');
+  feedBtn.addEventListener('click', () => {
+    feedPanel.classList.toggle('open');
+    if (feedPanel.classList.contains('open')) renderFeedPanel();
+  });
+  window.renderFeedPanel = function() {
+    const items = document.getElementById('widgetFeedItems');
+    const owned = JSON.parse(localStorage.getItem('pyword_shop') || '[]');
+    const allItems = getAllItems();
+    const foodItems = allItems.filter(i => i.category === 'food' && owned.includes(i.id));
+    if (foodItems.length === 0) {
+      items.innerHTML = '<div class="widget-feed-empty">没有食物了，去商店买吧～🏪</div>';
+      return;
+    }
+    items.innerHTML = foodItems.map(f => {
+      const aff = f.feedAff || 8;
+      const bp = [`💕+${aff}`];
+      if (f.bonus) {
+        if (f.bonus.int) bp.push('🧠+' + f.bonus.int);
+        if (f.bonus.charm) bp.push('✨+' + f.bonus.charm);
+        if (f.bonus.energy) bp.push('⚡+' + f.bonus.energy);
+      }
+      return `<div class="widget-feed-item" onclick="feedPet('${f.id}','${f.emoji}','${f.name}')">
+        <span class="feed-emoji">${f.emoji}</span>
+        <span class="feed-name">${f.name}</span>
+        <span style="font-size:10px;color:var(--ink-muted);margin-left:2px;">${bp.join(' ')}</span>
+      </div>`;
+    }).join('');
+  };
+
+  // 初始化好感度显示（函数可能在后续脚本块定义，延迟调用）
+  window.updateWidgetAff = function() {
+    if (typeof getAffection !== 'function') return;
+    const val = getAffection();
+    const level = getAffLevel(val);
+    const emoji = document.getElementById('widgetAffEmoji');
+    const valEl = document.getElementById('widgetAffVal');
+    if (emoji) emoji.textContent = level.emoji;
+    if (valEl) valEl.textContent = val;
+  }
+  // 延迟调用，等全局函数就绪
+  setTimeout(updateWidgetAff, 0);
+
+  // 拖拽
+  let dragging = false, dragStartX, dragStartY, startRight, startBottom;
+  avatar.addEventListener('mousedown', (e) => {
+    dragging = false;
+    dragStartX = e.clientX;
+    dragStartY = e.clientY;
+    const rect = widget.getBoundingClientRect();
+    startRight = window.innerWidth - rect.right;
+    startBottom = window.innerHeight - rect.bottom;
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+  });
+
+  function onMouseMove(e) {
+    const dx = e.clientX - dragStartX;
+    const dy = e.clientY - dragStartY;
+    if (Math.abs(dx) > 3 || Math.abs(dy) > 3) dragging = true;
+    widget.classList.add('dragging');
+    const newRight = Math.max(10, Math.min(window.innerWidth - 74, startRight - dx));
+    const newBottom = Math.max(10, Math.min(window.innerHeight - 74, startBottom - dy));
+    widget.style.right = newRight + 'px';
+    widget.style.bottom = newBottom + 'px';
+  }
+
+  function onMouseUp() {
+    document.removeEventListener('mousemove', onMouseMove);
+    document.removeEventListener('mouseup', onMouseUp);
+    widget.classList.remove('dragging');
+    setTimeout(() => dragging = false, 50);
+  }
+
+  // 聊天
+  const STORAGE_KEY = 'pyword_pet_chat';
+
+  function loadChatHistory() {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY);
+      if (!saved) return;
+      const messages = JSON.parse(saved);
+      messages.forEach(m => appendWidgetMsg(m.text, m.isUser, false));
+    } catch(e) { /* ignore */ }
+  }
+
+  function saveChatMessage(text, isUser) {
+    try {
+      const saved = localStorage.getItem(STORAGE_KEY) || '[]';
+      const messages = JSON.parse(saved);
+      messages.push({ text, isUser, time: Date.now() });
+      // 最多保留 200 条，防止 localStorage 爆满
+      if (messages.length > 200) messages.splice(0, messages.length - 200);
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(messages));
+    } catch(e) { /* ignore */ }
+  }
+
+  function appendWidgetMsg(text, isUser = false, save = true) {
+    const div = document.createElement('div');
+    div.className = `widget-msg ${isUser ? 'widget-msg-user' : 'widget-msg-momo'}`;
+    div.innerHTML = `<div class="widget-msg-bubble">${escapeWidgetHtml(text)}</div>`;
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
+    if (save) saveChatMessage(text, isUser);
+  }
+
+  function escapeWidgetHtml(text) {
+    const div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML.replace(/\n/g, '<br>');
+  }
+
+  function showWidgetTyping() {
+    const div = document.createElement('div');
+    div.className = 'widget-msg widget-msg-momo';
+    div.id = 'widgetTypingMsg';
+    div.innerHTML = `
+      <div class="widget-msg-bubble">
+        <div class="widget-typing">
+          <span></span><span></span><span></span>
+        </div>
+      </div>`;
+    body.appendChild(div);
+    body.scrollTop = body.scrollHeight;
+  }
+
+  function removeWidgetTyping() {
+    const el = document.getElementById('widgetTypingMsg');
+    if (el) el.remove();
+  }
+
+  async function widgetSendMessage() {
+    const text = input.value.trim();
+    if (!text) return;
+
+    appendWidgetMsg(text, true);
+    input.value = '';
+    input.style.height = 'auto';
+    sendBtn.disabled = true;
+    showWidgetTyping();
+
+    try {
+      const res = await fetch('/api/pet/chat', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ message: text })
+      });
+      const data = await res.json();
+      removeWidgetTyping();
+      appendWidgetMsg(data.reply || '呜～网络开小差了');
+      if (!isOpen) badge.classList.add('show');
+    } catch (e) {
+      removeWidgetTyping();
+      appendWidgetMsg('网络开小差了，稍后再试吧 (｡•́︿•̀｡)');
+    } finally {
+      sendBtn.disabled = false;
+      input.focus();
+      // 聊天加好感度 + 猫粮
+      if (typeof earnCatFood === 'function') earnCatFood('chat');
+      if (typeof updateWidgetAff === 'function') updateWidgetAff();
+    }
+  }
+
+  window.widgetSendMessage = widgetSendMessage;
+  window.widgetSendQuick = function(text) {
+    input.value = text;
+    widgetSendMessage();
+  };
+
+  input.addEventListener('input', () => {
+    input.style.height = 'auto';
+    input.style.height = Math.min(input.scrollHeight, 90) + 'px';
+  });
+
+  // 加载历史对话
+  loadChatHistory();
+
+  // ====== 情绪气泡：定期陪伴 ======
+  const moodBubble = document.getElementById('moodBubble');
+  const moodMessages = [
+    "嘿！该背单词啦 📖",
+    "加油加油！💪",
+    "累了吗？休息一下吧 ☕",
+    "Today is a great day! 🌟",
+    "喵～别忘了复习哦 🐱",
+    "Practice makes perfect! ✨",
+    "你今天好棒呀！🎉",
+    "坚持就是胜利！🏆",
+    "学习使我快乐...大概吧 😸",
+    "Every word counts! 📝",
+    "月薪喵在线陪读中～ 📚",
+    "Don't give up! 💪",
+    "摸鱼也要摸得有文化 🐟",
+    "打工人打工魂 💼",
+    "慢慢来，不着急 🌸",
+    "Believe in yourself! 🌈",
+    "又来背单词啦？好自律！👏",
+    "Keep going! 你是最棒的！",
+    "喵想你了～过来聊聊天？🐾",
+    "Life is short, learn more! 🚀",
+    "今天背了几个词呀？🤔",
+    "睡前复习效果最好哦 🌙",
+    "Rome wasn't built in a day!",
+    "喵也觉得英语很难...但我们一起！🤝",
+    "听说六级要来了？冲！冲刺！🔥",
+  ];
+
+  let moodTimer = null;
+  function showMood() {
+    // 随机延迟 8~25 秒
+    const delay = 8000 + Math.random() * 17000;
+    moodTimer = setTimeout(() => {
+      const msg = moodMessages[Math.floor(Math.random() * moodMessages.length)];
+      moodBubble.textContent = msg;
+      moodBubble.classList.add('show');
+      // 显示 4~7 秒后消失
+      const duration = 4000 + Math.random() * 3000;
+      setTimeout(() => {
+        moodBubble.classList.remove('show');
+        // 继续下一轮
+        showMood();
+      }, duration);
+    }, delay);
+  }
+
+  // 页面加载后 6 秒先来一次
+  setTimeout(() => {
+    const msg = moodMessages[Math.floor(Math.random() * moodMessages.length)];
+    moodBubble.textContent = msg;
+    moodBubble.classList.add('show');
+    setTimeout(() => moodBubble.classList.remove('show'), 5000);
+    // 启动定期循环
+    showMood();
+  }, 6000);
+
+  // 页面不可见时不暂停，持续陪伴
+})();
+</script>
+
+})();
+
+<script>
+// ====== 主题按钮绑定（DOM 就绪后执行）======
+(function() {
+  const btn = document.getElementById('themeToggle');
+  if (btn) {
+    btn.textContent = window.__pendingThemeBtn === 'dark' ? '🌙' : '☀️';
+    btn.addEventListener('click', () => {
+      const current = document.documentElement.getAttribute('data-theme') || 'light';
+      const next = current === 'dark' ? 'light' : 'dark';
+      document.documentElement.setAttribute('data-theme', next);
+      localStorage.setItem('pyword-theme', next);
+      btn.textContent = next === 'dark' ? '🌙' : '☀️';
+    });
+  }
+  if (typeof updateWidgetAff === 'function') updateWidgetAff();
+})();
+</script>
+
+{% block scripts %}{% endblock %}
+</body>
+</html>

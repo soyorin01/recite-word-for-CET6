@@ -1,0 +1,568 @@
+{% extends "base.html" %}
+
+{% block title %}错题本{% endblock %}
+
+{% block content %}
+<section class="hero" style="padding-bottom: 20px;">
+  <div class="hero-inner">
+    <h1>❌ 错题本</h1>
+    <p class="lead">针对性复习薄弱词汇，消灭反复出错的单词。</p>
+  </div>
+</section>
+
+<section class="container mistakes-page">
+
+  <!-- 统计卡片 -->
+  <div class="mistake-stats">
+    <div class="mistake-stat-card stat-total">
+      <div class="stat-emoji">❌</div>
+      <div class="stat-num" id="statTotal">{{ stats.total_wrong }}</div>
+      <div class="stat-label">错词数</div>
+    </div>
+    <div class="mistake-stat-card stat-today">
+      <div class="stat-emoji">📅</div>
+      <div class="stat-num">{{ stats.today_wrong }}</div>
+      <div class="stat-label">今日新错</div>
+    </div>
+    <div class="mistake-stat-card stat-week">
+      <div class="stat-emoji">📊</div>
+      <div class="stat-num">{{ stats.week_wrong }}</div>
+      <div class="stat-label">本周错词</div>
+    </div>
+    <div class="mistake-stat-card stat-conquered">
+      <div class="stat-emoji">🏆</div>
+      <div class="stat-num">{{ stats.conquered }}</div>
+      <div class="stat-label">已攻克</div>
+    </div>
+  </div>
+
+  <!-- 筛选 + 操作 -->
+  <div class="mistake-toolbar">
+    <div class="mistake-filters">
+      <button class="filter-chip active" data-period="all" onclick="filterPeriod('all')">全部</button>
+      <button class="filter-chip" data-period="today" onclick="filterPeriod('today')">今日</button>
+      <button class="filter-chip" data-period="week" onclick="filterPeriod('week')">本周</button>
+    </div>
+    <div class="mistake-actions">
+      <button class="btn btn-primary" id="quizBtn" onclick="startQuiz()">🎯 错题练习</button>
+      <button class="btn btn-outline" id="spellBtn" onclick="startSpell()">✏️ 错题拼写</button>
+    </div>
+  </div>
+
+  <!-- 错题列表 -->
+  <div class="mistake-list" id="mistakeList">
+    {% if words %}
+    {% for word in words %}
+    <div class="mistake-item" data-word-id="{{ word.id }}" data-word="{{ word.word }}">
+      <div class="mistake-word">
+        <div class="mistake-word-main">
+          <span class="word-text">{{ word.word }}</span>
+          <button class="btn-audio" onclick="PyWord.playAudio('{{ word.word }}')" title="播放发音">🔊</button>
+          <span class="word-phonetic">{{ word.phonetic_us }}</span>
+        </div>
+        <div class="mistake-word-def">
+          {% for m in word.meanings %}
+          <span class="def-tag">{{ m.pos }}</span>{{ m.def }}{% if not loop.last %}；{% endif %}
+          {% endfor %}
+        </div>
+      </div>
+      <div class="mistake-meta">
+        <div class="meta-wrong">
+          <span class="wrong-count">{{ word.wrong_count }}</span>
+          <span class="wrong-label">次错误</span>
+        </div>
+        <div class="meta-familiarity">
+          <div class="fam-bar"><div class="fam-fill" style="width:{{ word.familiarity }}%;background:{% if word.familiarity < 30 %}#E8453A{% elif word.familiarity < 60 %}#F39C12{% else %}#27AE60{% endif %}"></div></div>
+          <span class="fam-val">{{ word.familiarity }}</span>
+        </div>
+        <div class="meta-status">
+          <span class="status-tag status-{{ word.status }}">{{ {'new':'新词','learning':'学习中','review':'复习中','mastered':'已掌握'}.get(word.status, word.status) }}</span>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+    {% else %}
+    <div class="empty-state">
+      <div class="empty-state-icon">🎉</div>
+      <h3>暂无错题</h3>
+      <p>太棒了！目前没有出错的单词。继续保持！</p>
+      <div class="action-bar">
+        <a href="/learn" class="btn btn-primary">学新词</a>
+        <a href="/review" class="btn btn-outline">去复习</a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <!-- 错题练习模式（隐藏） -->
+  <div class="quiz-mode" id="quizMode" style="display:none;">
+    <div class="quiz-header">
+      <button class="btn btn-ghost" onclick="exitQuiz()">← 返回错题本</button>
+      <div class="quiz-progress">
+        <span id="quizProgress">1 / 10</span>
+      </div>
+      <div class="quiz-score">
+        <span class="score-correct" id="quizCorrect">0</span> ✅
+        <span class="score-wrong" id="quizWrong">0</span> ❌
+      </div>
+    </div>
+
+    <div class="quiz-card" id="quizCard">
+      <div style="text-align:center;margin-bottom:16px;">
+        <span class="mode-badge quiz">🎯 错题练习</span>
+      </div>
+
+      <div class="word-header" style="justify-content:center;flex-direction:column;align-items:center;">
+        <div class="word-title" id="quizWord">—</div>
+        <div class="word-phonetic">
+          <span id="quizPhonetic"></span>
+          <button class="btn-audio" id="quizAudio">🔊</button>
+        </div>
+      </div>
+
+      <p style="text-align:center;font-size:13px;color:var(--ink-muted);margin:20px 0 4px;">请选择正确的释义：</p>
+      <div class="choice-grid" id="quizChoices"></div>
+    </div>
+
+    <!-- 拼写模式 -->
+    <div class="spell-mode-card" id="spellModeCard" style="display:none;">
+      <div style="text-align:center;margin-bottom:16px;">
+        <span class="mode-badge spell">✏️ 错题拼写</span>
+      </div>
+      <div style="text-align:center;margin-bottom:24px;">
+        <p style="font-size:14px;color:var(--ink-muted);margin-bottom:8px;">请根据释义拼写单词：</p>
+        <div class="word-meanings" style="display:inline-block;text-align:left;">
+          <span id="spellMeaning"></span>
+        </div>
+      </div>
+      <div style="text-align:center;margin-bottom:24px;">
+        <button class="btn-audio" style="width:48px;height:48px;font-size:18px;" id="spellAudio">🔊</button>
+      </div>
+      <div style="max-width:400px;margin:0 auto 16px;">
+        <input type="text" class="spell-input" id="spellInput" placeholder="输入单词..." autocomplete="off" spellcheck="false"
+               onkeydown="if(event.key==='Enter') checkSpellAnswer()" oninput="onSpellInput()" />
+      </div>
+      <div style="text-align:center;margin-bottom:16px;">
+        <span id="spellHint" style="font-size:14px;color:var(--ink-dim);font-family:var(--font-mono);"></span>
+      </div>
+      <div class="action-bar">
+        <button class="btn btn-primary" onclick="checkSpellAnswer()">✅ 提交</button>
+        <button class="btn btn-ghost" onclick="skipSpellAnswer()">⏭ 跳过</button>
+      </div>
+      <div id="spellResult" style="display:none;margin-top:20px;text-align:center;"></div>
+    </div>
+  </div>
+
+</section>
+
+<style>
+.mistakes-page { padding-bottom: 60px; }
+
+/* 统计卡片 */
+.mistake-stats {
+  display: grid; grid-template-columns: repeat(4, 1fr);
+  gap: 16px; margin-bottom: 28px;
+}
+.mistake-stat-card {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--r-xl); padding: 20px 16px;
+  text-align: center; transition: transform 0.2s;
+}
+.mistake-stat-card:hover { transform: translateY(-2px); }
+.stat-emoji { font-size: 28px; margin-bottom: 8px; }
+.stat-num { font-size: 28px; font-weight: 700; color: var(--ink-bright); margin-bottom: 4px; }
+.stat-label { font-size: 12px; color: var(--ink-muted); font-weight: 500; }
+.stat-total .stat-num { color: #E8453A; }
+.stat-today .stat-num { color: #F39C12; }
+.stat-week .stat-num { color: #3498DB; }
+.stat-conquered .stat-num { color: #27AE60; }
+
+/* 工具栏 */
+.mistake-toolbar {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 20px; flex-wrap: wrap; gap: 12px;
+}
+.mistake-filters { display: flex; gap: 8px; }
+.filter-chip {
+  padding: 7px 16px; border-radius: var(--r-pill);
+  border: 1px solid var(--border); background: var(--surface-card);
+  font-size: 13px; color: var(--ink-muted); cursor: pointer; transition: all 0.15s;
+}
+.filter-chip.active,
+.filter-chip:hover { border-color: var(--accent); color: var(--accent); background: rgba(232,69,58,0.06); }
+.mistake-actions { display: flex; gap: 10px; }
+
+/* 错题列表 */
+.mistake-list { display: flex; flex-direction: column; gap: 10px; }
+.mistake-item {
+  display: flex; justify-content: space-between; align-items: center;
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 16px 20px;
+  transition: transform 0.15s, box-shadow 0.15s; cursor: default;
+}
+.mistake-item:hover { transform: translateX(4px); box-shadow: var(--shadow-card); }
+.mistake-word-main { display: flex; align-items: center; gap: 10px; margin-bottom: 6px; }
+.word-text { font-size: 18px; font-weight: 700; color: var(--ink-bright); font-family: var(--font-mono); }
+.word-phonetic { font-size: 13px; color: var(--ink-muted); }
+.btn-audio {
+  background: none; border: none; cursor: pointer; font-size: 16px;
+  opacity: 0.6; transition: opacity 0.15s; padding: 2px;
+}
+.btn-audio:hover { opacity: 1; }
+.mistake-word-def { font-size: 13px; color: var(--ink-soft); line-height: 1.5; }
+.def-tag {
+  display: inline-block; padding: 1px 6px; border-radius: 4px;
+  background: rgba(232,69,58,0.08); color: var(--accent);
+  font-size: 11px; font-weight: 600; margin-right: 4px;
+}
+
+.mistake-meta { display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+.meta-wrong { text-align: center; }
+.wrong-count { display: block; font-size: 20px; font-weight: 700; color: #E8453A; }
+.wrong-label { font-size: 11px; color: var(--ink-muted); }
+.meta-familiarity { display: flex; align-items: center; gap: 6px; }
+.fam-bar { width: 60px; height: 6px; background: rgba(0,0,0,0.08); border-radius: 3px; overflow: hidden; }
+.fam-fill { height: 100%; border-radius: 3px; transition: width 0.3s; }
+.fam-val { font-size: 13px; font-weight: 600; color: var(--ink-soft); min-width: 24px; text-align: right; }
+.status-tag {
+  padding: 3px 10px; border-radius: var(--r-pill);
+  font-size: 11px; font-weight: 600;
+}
+.status-new { background: rgba(52,152,219,0.1); color: #3498DB; }
+.status-learning { background: rgba(243,156,18,0.1); color: #F39C12; }
+.status-review { background: rgba(155,89,182,0.1); color: #9B59B6; }
+.status-mastered { background: rgba(39,174,96,0.1); color: #27AE60; }
+
+/* 练习模式 */
+.quiz-mode { max-width: 600px; margin: 0 auto; }
+.quiz-header {
+  display: flex; justify-content: space-between; align-items: center;
+  margin-bottom: 24px; flex-wrap: wrap; gap: 10px;
+}
+.quiz-progress { font-size: 15px; font-weight: 600; color: var(--ink-bright); }
+.quiz-score { font-size: 14px; display: flex; gap: 12px; }
+.score-correct { color: var(--success); font-weight: 700; }
+.score-wrong { color: var(--warning); font-weight: 700; }
+.quiz-card {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--r-xl); padding: 28px 24px;
+}
+.choice-grid { display: flex; flex-direction: column; gap: 10px; margin-top: 12px; }
+.choice-btn {
+  padding: 14px 18px; border-radius: var(--r-md);
+  border: 1.5px solid var(--border); background: var(--surface-1);
+  font-size: 14px; color: var(--ink-soft); cursor: pointer;
+  text-align: left; transition: all 0.15s; line-height: 1.5;
+}
+.choice-btn:hover { border-color: var(--accent); background: rgba(232,69,58,0.04); }
+.choice-btn.correct { border-color: var(--success); background: var(--success-soft); color: var(--success); font-weight: 600; }
+.choice-btn.wrong { border-color: var(--warning); background: var(--warning-soft); color: var(--warning); }
+
+.spell-mode-card {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--r-xl); padding: 28px 24px;
+}
+.spell-input {
+  width: 100%; padding: 12px 16px; border: 1.5px solid var(--border);
+  border-radius: var(--r-md); font-size: 16px; font-family: var(--font-mono);
+  background: var(--surface-1); color: var(--ink);
+  transition: border-color 0.2s;
+}
+.spell-input:focus { outline: none; border-color: var(--accent); }
+
+@media (max-width: 640px) {
+  .mistake-stats { grid-template-columns: repeat(2, 1fr); }
+  .mistake-item { flex-direction: column; align-items: flex-start; gap: 12px; }
+  .mistake-meta { width: 100%; justify-content: space-between; }
+}
+</style>
+
+<script>
+const allWords = {{ words | tojson }};
+let currentWords = [...allWords];
+let quizWords = [];
+let quizIdx = 0;
+let quizCorrectCount = 0;
+let quizWrongCount = 0;
+let currentQuizWord = null;
+let spellPeeking = false;
+
+// 时间筛选
+function filterPeriod(period) {
+  document.querySelectorAll('.filter-chip').forEach(c => c.classList.toggle('active', c.dataset.period === period));
+  // 从服务端重新获取
+  fetch(`/api/mistakes?period=${period}`)
+    .then(r => r.json())
+    .then(data => {
+      currentWords = data.words;
+      renderList();
+      document.getElementById('statTotal').textContent = data.stats.total_wrong;
+      // 如果列表为空且不是练习模式，显示空状态
+      const listEl = document.getElementById('mistakeList');
+      if (currentWords.length === 0 && document.getElementById('quizMode').style.display === 'none') {
+        listEl.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">🎉</div>
+            <h3>暂无错题</h3>
+            <p>太棒了！目前没有出错的单词。继续保持！</p>
+            <div class="action-bar">
+              <a href="/learn" class="btn btn-primary">学新词</a>
+              <a href="/review" class="btn btn-outline">去复习</a>
+            </div>
+          </div>`;
+      }
+    });
+}
+
+function renderList() {
+  const listEl = document.getElementById('mistakeList');
+  if (currentWords.length === 0) return;
+  listEl.innerHTML = currentWords.map(w => {
+    const meanings = (w.meanings || []).map(m => `<span class="def-tag">${m.pos}</span>${m.def}`).join('；');
+    const famColor = w.familiarity < 30 ? '#E8453A' : w.familiarity < 60 ? '#F39C12' : '#27AE60';
+    const statusMap = {new:'新词',learning:'学习中',review:'复习中',mastered:'已掌握'};
+    return `
+    <div class="mistake-item">
+      <div class="mistake-word">
+        <div class="mistake-word-main">
+          <span class="word-text">${w.word}</span>
+          <button class="btn-audio" onclick="PyWord.playAudio('${w.word}')">🔊</button>
+          <span class="word-phonetic">${w.phonetic_us || ''}</span>
+        </div>
+        <div class="mistake-word-def">${meanings}</div>
+      </div>
+      <div class="mistake-meta">
+        <div class="meta-wrong"><span class="wrong-count">${w.wrong_count}</span><span class="wrong-label">次错误</span></div>
+        <div class="meta-familiarity"><div class="fam-bar"><div class="fam-fill" style="width:${w.familiarity}%;background:${famColor}"></div></div><span class="fam-val">${w.familiarity}</span></div>
+        <div class="meta-status"><span class="status-tag status-${w.status}">${statusMap[w.status] || w.status}</span></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+// ====== 错题选择题练习 ======
+function startQuiz() {
+  if (currentWords.length === 0) { PyWord.toast('没有错题可以练习', 'info'); return; }
+  quizWords = [...currentWords].sort(() => Math.random() - 0.5).slice(0, Math.min(10, currentWords.length));
+  quizIdx = 0; quizCorrectCount = 0; quizWrongCount = 0;
+  document.getElementById('mistakeList').style.display = 'none';
+  document.querySelector('.mistake-toolbar').style.display = 'none';
+  document.getElementById('quizMode').style.display = 'block';
+  document.getElementById('quizCard').style.display = 'block';
+  document.getElementById('spellModeCard').style.display = 'none';
+  showQuizWord();
+}
+
+function showQuizWord() {
+  if (quizIdx >= quizWords.length) { finishQuiz(); return; }
+  currentQuizWord = quizWords[quizIdx];
+  document.getElementById('quizProgress').textContent = `${quizIdx + 1} / ${quizWords.length}`;
+  document.getElementById('quizCorrect').textContent = quizCorrectCount;
+  document.getElementById('quizWrong').textContent = quizWrongCount;
+  document.getElementById('quizWord').textContent = currentQuizWord.word;
+  document.getElementById('quizPhonetic').textContent = currentQuizWord.phonetic_us || '';
+  document.getElementById('quizAudio').onclick = () => PyWord.playAudio(currentQuizWord.word);
+
+  // 生成选项
+  generateQuizChoices();
+}
+
+async function generateQuizChoices() {
+  const container = document.getElementById('quizChoices');
+  container.innerHTML = '<div style="text-align:center;padding:16px;color:var(--ink-dim);">加载选项中...</div>';
+  try {
+    const res = await fetch('/api/words/quiz_options', {
+      method: 'POST', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ word_id: currentQuizWord.id })
+    });
+    const data = await res.json();
+    container.innerHTML = '';
+    data.options.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.textContent = `${'ABCD'[i]}. ${opt.text}`;
+      btn.onclick = () => handleQuizChoice(opt.is_correct, btn, data);
+      container.appendChild(btn);
+    });
+  } catch(e) {
+    // 本地备用
+    container.innerHTML = '';
+    const correctDef = (currentQuizWord.meanings || []).map(m => m.def).join('；');
+    const distractors = currentWords.filter(w => w.id !== currentQuizWord.id).sort(() => Math.random() - 0.5).slice(0, 3);
+    const options = [{ text: correctDef, is_correct: true }];
+    distractors.forEach(d => options.push({ text: (d.meanings || []).map(m => m.def).join('；'), is_correct: false }));
+    options.sort(() => Math.random() - 0.5);
+    options.forEach((opt, i) => {
+      const btn = document.createElement('button');
+      btn.className = 'choice-btn';
+      btn.textContent = `${'ABCD'[i]}. ${opt.text}`;
+      btn.onclick = () => handleQuizChoice(opt.is_correct, btn, { options });
+      container.appendChild(btn);
+    });
+  }
+}
+
+function handleQuizChoice(isCorrect, clickedBtn, data) {
+  const container = clickedBtn.parentElement;
+  container.querySelectorAll('.choice-btn').forEach(b => { b.disabled = true; b.style.pointerEvents = 'none'; });
+  if (isCorrect) {
+    clickedBtn.classList.add('correct');
+    quizCorrectCount++;
+    PyWord.toast('答对了！👏', 'success');
+    PyWord.submitResult(currentQuizWord.id, 'correct');
+    if (typeof earnCatFood === 'function') earnCatFood('review_correct');
+  } else {
+    clickedBtn.classList.add('wrong');
+    quizWrongCount++;
+    PyWord.toast('再仔细看看～', 'warning');
+    PyWord.submitResult(currentQuizWord.id, 'wrong');
+    // 高亮正确答案
+    container.querySelectorAll('.choice-btn').forEach(b => {
+      const text = b.textContent.replace(/^[A-D]\.\s*/, '');
+      const correctText = data.options.find(o => o.is_correct)?.text;
+      if (correctText && (text.includes(correctText.substring(0, 6)) || correctText.includes(text.substring(0, 6)))) {
+        b.classList.add('correct');
+      }
+    });
+  }
+  setTimeout(() => { quizIdx++; showQuizWord(); }, 1200);
+}
+
+function finishQuiz() {
+  const total = quizCorrectCount + quizWrongCount;
+  const pct = total > 0 ? Math.round(quizCorrectCount / total * 100) : 0;
+  const card = document.getElementById('quizCard');
+  card.innerHTML = `
+    <div style="text-align:center;">
+      <div style="font-size:48px;margin-bottom:16px;">${pct >= 80 ? '🎉' : pct >= 50 ? '💪' : '📖'}</div>
+      <h3 style="font-size:22px;color:var(--ink-bright);margin-bottom:8px;">练习完成！</h3>
+      <p style="font-size:15px;color:var(--ink-soft);margin-bottom:20px;">正确 ${quizCorrectCount} / ${total}，正确率 ${pct}%</p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="startQuiz()">🎯 再练一组</button>
+        <button class="btn btn-outline" onclick="exitQuiz()">← 返回错题本</button>
+      </div>
+    </div>`;
+}
+
+// ====== 错题拼写练习 ======
+let spellWords = [];
+let spellIdx = 0;
+let spellCorrectCount = 0;
+let spellWrongCount = 0;
+
+function startSpell() {
+  if (currentWords.length === 0) { PyWord.toast('没有错题可以拼写', 'info'); return; }
+  spellWords = [...currentWords].sort(() => Math.random() - 0.5).slice(0, Math.min(10, currentWords.length));
+  spellIdx = 0; spellCorrectCount = 0; spellWrongCount = 0; spellPeeking = false;
+  document.getElementById('mistakeList').style.display = 'none';
+  document.querySelector('.mistake-toolbar').style.display = 'none';
+  document.getElementById('quizMode').style.display = 'block';
+  document.getElementById('quizCard').style.display = 'none';
+  document.getElementById('spellModeCard').style.display = 'block';
+  updateSpellHeader();
+  showSpellWord();
+}
+
+function updateSpellHeader() {
+  document.getElementById('quizProgress').textContent = `${spellIdx + 1} / ${spellWords.length}`;
+  document.getElementById('quizCorrect').textContent = spellCorrectCount;
+  document.getElementById('quizWrong').textContent = spellWrongCount;
+}
+
+function showSpellWord() {
+  if (spellIdx >= spellWords.length) { finishSpell(); return; }
+  const w = spellWords[spellIdx];
+  spellPeeking = false;
+  updateSpellHeader();
+  const meanings = (w.meanings || []).map(m => `<span class="def-tag">${m.pos}</span>${m.def}`).join('；');
+  document.getElementById('spellMeaning').innerHTML = meanings;
+  document.getElementById('spellAudio').onclick = () => PyWord.playAudio(w.word);
+  document.getElementById('spellInput').value = '';
+  document.getElementById('spellInput').style.borderColor = '';
+  document.getElementById('spellInput').style.background = '';
+  document.getElementById('spellInput').disabled = false;
+  document.getElementById('spellHint').textContent = '提示：' + w.word[0] + '·'.repeat(w.word.length - 2) + w.word[w.word.length - 1];
+  document.getElementById('spellResult').style.display = 'none';
+  setTimeout(() => document.getElementById('spellInput').focus(), 100);
+}
+
+function onSpellInput() {
+  if (!spellPeeking) return;
+  spellPeeking = false;
+  const w = spellWords[spellIdx];
+  document.getElementById('spellHint').textContent = '提示：' + w.word[0] + '·'.repeat(w.word.length - 2) + w.word[w.word.length - 1];
+  document.getElementById('spellHint').style.color = 'var(--ink-dim)';
+  document.getElementById('spellHint').style.fontWeight = '';
+  document.getElementById('spellResult').style.display = 'none';
+  const input = document.getElementById('spellInput');
+  input.style.borderColor = '';
+  input.style.background = '';
+}
+
+function checkSpellAnswer() {
+  if (spellPeeking) return;
+  const w = spellWords[spellIdx];
+  const input = document.getElementById('spellInput');
+  const resultDiv = document.getElementById('spellResult');
+  const userAnswer = input.value.trim().toLowerCase();
+  if (!userAnswer) return;
+
+  const correct = userAnswer === w.word.toLowerCase();
+  if (correct) {
+    spellCorrectCount++;
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = `<div style="color:var(--success);font-size:18px;font-weight:600;margin-bottom:8px;">✅ 拼写正确！</div>`;
+    input.style.borderColor = 'var(--success)';
+    input.style.background = 'var(--success-soft)';
+    input.disabled = true;
+    PyWord.submitResult(w.id, 'correct');
+    if (typeof earnCatFood === 'function') earnCatFood('spell_correct');
+    setTimeout(() => { spellIdx++; showSpellWord(); }, 1200);
+  } else {
+    spellPeeking = true;
+    input.value = '';
+    resultDiv.style.display = 'block';
+    resultDiv.innerHTML = `
+      <div style="color:var(--warning);font-size:14px;margin-bottom:4px;">❌ 拼写错误</div>
+      <div style="font-family:var(--font-mono);font-size:20px;color:var(--ink-bright);font-weight:600;">${w.word}</div>
+    `;
+    input.style.borderColor = 'var(--warning)';
+    input.style.background = 'var(--warning-soft)';
+    input.focus();
+    setTimeout(() => { input.style.borderColor = ''; input.style.background = ''; }, 800);
+    PyWord.submitResult(w.id, 'wrong');
+  }
+}
+
+function skipSpellAnswer() {
+  const w = spellWords[spellIdx];
+  PyWord.submitResult(w.id, 'ambiguous');
+  spellIdx++;
+  showSpellWord();
+}
+
+function finishSpell() {
+  const total = spellCorrectCount + (spellWords.length - spellCorrectCount);
+  const pct = spellWords.length > 0 ? Math.round(spellCorrectCount / spellWords.length * 100) : 0;
+  const card = document.getElementById('spellModeCard');
+  card.innerHTML = `
+    <div style="text-align:center;">
+      <div style="font-size:48px;margin-bottom:16px;">🎯</div>
+      <h3 style="font-size:22px;color:var(--ink-bright);margin-bottom:8px;">拼写训练完成！</h3>
+      <p style="font-size:15px;color:var(--ink-soft);margin-bottom:20px;">正确 ${spellCorrectCount} / ${spellWords.length}，正确率 ${pct}%</p>
+      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap;">
+        <button class="btn btn-primary" onclick="startSpell()">✏️ 再练一组</button>
+        <button class="btn btn-outline" onclick="exitQuiz()">← 返回错题本</button>
+      </div>
+    </div>`;
+}
+
+function exitQuiz() {
+  document.getElementById('quizMode').style.display = 'none';
+  document.getElementById('mistakeList').style.display = '';
+  document.querySelector('.mistake-toolbar').style.display = '';
+  // 重新加载列表
+  location.reload();
+}
+</script>
+{% endblock %}

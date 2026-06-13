@@ -1,0 +1,362 @@
+{% extends "base.html" %}
+
+{% block title %}学习数据{% endblock %}
+
+{% block head_extra %}
+<script src="https://cdn.jsdelivr.net/npm/echarts@5.4.3/dist/echarts.min.js"></script>
+{% endblock %}
+
+{% block content %}
+<section class="hero" style="padding-bottom: 20px;">
+  <div class="hero-inner">
+    <h1>📊 学习数据看板</h1>
+    <p class="lead">用数据驱动学习，让进步看得见。所有统计均由 Python 后端实时计算。</p>
+  </div>
+</section>
+
+<div class="container">
+  <!-- 总体统计 -->
+  <div class="stats-grid" style="margin-bottom: 40px;">
+    <div class="stat-card tint-coral">
+      <div class="stat-value">{{ stats.words.total or 0 }}</div>
+      <div class="stat-label">词库总量</div>
+    </div>
+    <div class="stat-card tint-mint">
+      <div class="stat-value success">{{ stats.words.mastered or 0 }}</div>
+      <div class="stat-label">已掌握</div>
+    </div>
+    <div class="stat-card tint-sky">
+      <div class="stat-value warning">{{ stats.words.reviewing or 0 }}</div>
+      <div class="stat-label">复习中</div>
+    </div>
+    <div class="stat-card tint-lavender">
+      <div class="stat-value">{{ stats.today.streak or 0 }}</div>
+      <div class="stat-label">连续打卡</div>
+    </div>
+  </div>
+
+  <!-- 图表区 -->
+  <div class="dashboard-grid" style="margin-bottom: 20px;">
+    <!-- 学习趋势折线图 -->
+    <div class="chart-card" style="grid-column: 1 / -1;">
+      <h3>📈 近30天学习趋势</h3>
+      <div id="trendChart" style="width: 100%; height: 320px;"></div>
+    </div>
+
+    <!-- 掌握率饼图 -->
+    <div class="chart-card">
+      <h3>🥧 单词掌握分布</h3>
+      <div id="pieChart" style="width: 100%; height: 300px;"></div>
+    </div>
+
+    <!-- 记忆持久度折线图 -->
+    <div class="chart-card">
+      <h3>🧠 艾宾浩斯记忆曲线</h3>
+      <div id="ebbinghausChart" style="width: 100%; height: 300px;"></div>
+    </div>
+
+    <!-- 薄弱词汇柱状图 -->
+    <div class="chart-card">
+      <h3>⚠️ 薄弱词汇 TOP5</h3>
+      <div id="weakChart" style="width: 100%; height: 300px;"></div>
+    </div>
+
+    <!-- 学习热力图 -->
+    <div class="chart-card">
+      <h3>🔥 学习热力图（近30天）</h3>
+      <div id="heatmapChart" style="width: 100%; height: 300px;"></div>
+    </div>
+  </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+(function() {
+  const isDark = () => document.documentElement.getAttribute('data-theme') === 'dark';
+
+  function chartColor(key) {
+    const colors = {
+      text: isDark() ? '#94a3b8' : '#6b5e53',
+      textStrong: isDark() ? '#f1f5f9' : '#1a1a1a',
+      grid: isDark() ? '#334155' : '#e8dcc8',
+      bg: isDark() ? '#1e293b' : '#ffffff',
+      accent: '#E8453A',
+      success: '#27AE60',
+      warning: '#F39C12',
+      info: '#7B5BFF'
+    };
+    return colors[key];
+  }
+
+  const commonOption = {
+    textStyle: { fontFamily: 'Inter, "Noto Sans SC", sans-serif' },
+    tooltip: {
+      backgroundColor: isDark() ? '#1e293b' : '#ffffff',
+      borderColor: isDark() ? '#334155' : '#e8dcc8',
+      textStyle: { color: chartColor('textStrong') }
+    }
+  };
+
+  // ====== 1. 学习趋势折线图 ======
+  const recentDays = {{ stats.recent_days | tojson }};
+  const trendData = recentDays.slice().reverse().map(d => ({
+    date: d.date.slice(5),
+    reviewed: d.reviewed || 0,
+    correct: d.correct_count || 0
+  }));
+
+  // 如果数据不足30天，补零
+  while (trendData.length < 7) {
+    trendData.unshift({ date: '--', reviewed: 0, correct: 0 });
+  }
+
+  const trendChart = echarts.init(document.getElementById('trendChart'));
+  trendChart.setOption({
+    ...commonOption,
+    tooltip: { trigger: 'axis', ...commonOption.tooltip },
+    legend: {
+      data: ['学习量', '正确数'],
+      textStyle: { color: chartColor('text') },
+      bottom: 0
+    },
+    grid: { left: 48, right: 24, top: 24, bottom: 40 },
+    xAxis: {
+      type: 'category',
+      data: trendData.map(d => d.date),
+      axisLine: { lineStyle: { color: chartColor('grid') } },
+      axisLabel: { color: chartColor('text') }
+    },
+    yAxis: {
+      type: 'value',
+      axisLine: { show: false },
+      splitLine: { lineStyle: { color: chartColor('grid'), type: 'dashed' } },
+      axisLabel: { color: chartColor('text') }
+    },
+    series: [
+      {
+        name: '学习量', type: 'line',
+        data: trendData.map(d => d.reviewed),
+        smooth: true,
+        lineStyle: { color: chartColor('accent'), width: 3 },
+        itemStyle: { color: chartColor('accent') },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: isDark() ? 'rgba(232,69,58,0.3)' : 'rgba(232,69,58,0.15)' },
+            { offset: 1, color: 'transparent' }
+          ])
+        },
+        symbol: 'circle', symbolSize: 8
+      },
+      {
+        name: '正确数', type: 'line',
+        data: trendData.map(d => d.correct),
+        smooth: true,
+        lineStyle: { color: chartColor('success'), width: 3 },
+        itemStyle: { color: chartColor('success') },
+        areaStyle: {
+          color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+            { offset: 0, color: isDark() ? 'rgba(39,174,96,0.3)' : 'rgba(39,174,96,0.15)' },
+            { offset: 1, color: 'transparent' }
+          ])
+        },
+        symbol: 'circle', symbolSize: 8
+      }
+    ]
+  });
+
+  // ====== 2. 掌握率饼图 ======
+  const wordStats = {{ stats.words | tojson }};
+  const pieChart = echarts.init(document.getElementById('pieChart'));
+  pieChart.setOption({
+    ...commonOption,
+    tooltip: { trigger: 'item', formatter: '{b}: {c} ({d}%)', ...commonOption.tooltip },
+    legend: {
+      orient: 'vertical', right: 10, top: 'center',
+      textStyle: { color: chartColor('text') }
+    },
+    series: [{
+      type: 'pie',
+      radius: ['40%', '70%'],
+      center: ['35%', '50%'],
+      avoidLabelOverlap: false,
+      itemStyle: { borderRadius: 8, borderColor: chartColor('bg'), borderWidth: 2 },
+      label: { show: false },
+      data: [
+        { value: wordStats.mastered || 0, name: '已掌握', itemStyle: { color: chartColor('success') } },
+        { value: wordStats.reviewing || 0, name: '复习中', itemStyle: { color: chartColor('warning') } },
+        { value: wordStats.learning || 0, name: '学习中', itemStyle: { color: chartColor('info') } },
+        { value: wordStats.new || 0, name: '未学习', itemStyle: { color: chartColor('grid') } }
+      ]
+    }]
+  });
+
+  // ====== 3. 艾宾浩斯记忆曲线 ======
+  const ebbinghausData = [
+    { time: '20分钟', rate: 58 },
+    { time: '1小时', rate: 44 },
+    { time: '9小时', rate: 36 },
+    { time: '1天', rate: 34 },
+    { time: '2天', rate: 28 },
+    { time: '6天', rate: 25 },
+    { time: '31天', rate: 21 }
+  ];
+  const ebChart = echarts.init(document.getElementById('ebbinghausChart'));
+  ebChart.setOption({
+    ...commonOption,
+    tooltip: { trigger: 'axis', formatter: '{b}: 保留 {c}%', ...commonOption.tooltip },
+    grid: { left: 48, right: 24, top: 24, bottom: 32 },
+    xAxis: {
+      type: 'category',
+      data: ebbinghausData.map(d => d.time),
+      axisLine: { lineStyle: { color: chartColor('grid') } },
+      axisLabel: { color: chartColor('text'), fontSize: 11 }
+    },
+    yAxis: {
+      type: 'value', max: 100, min: 0,
+      axisLine: { show: false },
+      splitLine: { lineStyle: { color: chartColor('grid'), type: 'dashed' } },
+      axisLabel: { color: chartColor('text'), formatter: '{value}%' }
+    },
+    series: [{
+      type: 'line',
+      data: ebbinghausData.map(d => d.rate),
+      smooth: true,
+      lineStyle: { color: chartColor('accent'), width: 3 },
+      itemStyle: { color: chartColor('accent') },
+      areaStyle: {
+        color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+          { offset: 0, color: isDark() ? 'rgba(232,69,58,0.3)' : 'rgba(232,69,58,0.15)' },
+          { offset: 1, color: 'transparent' }
+        ])
+      },
+      markPoint: {
+        data: [{ type: 'max', name: '最高' }],
+        itemStyle: { color: chartColor('success') }
+      }
+    }]
+  });
+
+  // ====== 4. 薄弱词汇柱状图 ======
+  const weakWords = {{ stats.weak_words | tojson }};
+  const weakChart = echarts.init(document.getElementById('weakChart'));
+  if (weakWords.length > 0) {
+    weakChart.setOption({
+      ...commonOption,
+      tooltip: { trigger: 'axis', ...commonOption.tooltip },
+      grid: { left: 80, right: 24, top: 16, bottom: 24 },
+      xAxis: {
+        type: 'value',
+        axisLine: { show: false },
+        splitLine: { lineStyle: { color: chartColor('grid'), type: 'dashed' } },
+        axisLabel: { color: chartColor('text') }
+      },
+      yAxis: {
+        type: 'category',
+        data: weakWords.map(w => w.word).reverse(),
+        axisLine: { lineStyle: { color: chartColor('grid') } },
+        axisLabel: { color: chartColor('textStrong'), fontWeight: 600 }
+      },
+      series: [{
+        type: 'bar',
+        data: weakWords.map(w => w.wrong_count).reverse(),
+        itemStyle: {
+          color: new echarts.graphic.LinearGradient(1, 0, 0, 0, [
+            { offset: 0, color: '#E8453A' },
+            { offset: 1, color: '#f7a072' }
+          ]),
+          borderRadius: [0, 6, 6, 0]
+        },
+        barWidth: '60%'
+      }]
+    });
+  } else {
+    weakChart.setOption({
+      title: {
+        text: '暂无薄弱词汇，继续保持！🎉',
+        left: 'center', top: 'center',
+        textStyle: { color: chartColor('text'), fontSize: 14 }
+      }
+    });
+  }
+
+  // ====== 5. 学习热力图 ======
+  const calendarData = {{ stats.calendar | tojson }};
+  const today = new Date();
+  const heatData = [];
+  for (let i = 29; i >= 0; i--) {
+    const d = new Date(today);
+    d.setDate(d.getDate() - i);
+    const dateStr = d.toISOString().slice(0, 10);
+    const entry = calendarData.find(c => c.date === dateStr);
+    heatData.push([dateStr, entry ? (entry.reviewed || 0) : 0]);
+  }
+
+  const heatChart = echarts.init(document.getElementById('heatmapChart'));
+  const dates = heatData.map(d => d[0]);
+  const values = heatData.map(d => d[1]);
+  const maxVal = Math.max(...values, 1);
+
+  heatChart.setOption({
+    ...commonOption,
+    tooltip: {
+      trigger: 'item',
+      formatter: p => `${p.name}<br/>学习 ${p.data[1]} 词`,
+      ...commonOption.tooltip
+    },
+    grid: { left: 32, right: 16, top: 16, bottom: 48 },
+    xAxis: {
+      type: 'category',
+      data: dates.map(d => d.slice(5)),
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: { color: chartColor('text'), fontSize: 10, interval: 4 }
+    },
+    yAxis: {
+      type: 'category',
+      data: ['学习'],
+      axisLine: { show: false },
+      axisTick: { show: false },
+      axisLabel: { show: false }
+    },
+    visualMap: {
+      min: 0, max: maxVal,
+      show: false,
+      inRange: {
+        color: isDark()
+          ? ['#1e293b', '#334155', '#475569', '#E8453A']
+          : ['#f2eadd', '#e8dcc8', '#d4a574', '#E8453A']
+      }
+    },
+    series: [{
+      type: 'heatmap',
+      data: dates.map((d, i) => [d.slice(5), '学习', values[i]]),
+      label: { show: false },
+      itemStyle: {
+        borderColor: chartColor('bg'),
+        borderWidth: 2,
+        borderRadius: 4
+      }
+    }]
+  });
+
+  // ====== 主题切换时重绘所有图表 ======
+  const observer = new MutationObserver(() => {
+    const allCharts = [trendChart, pieChart, ebChart, weakChart, heatChart];
+    allCharts.forEach(c => {
+      if (c) {
+        c.dispose();
+      }
+    });
+    location.reload();
+  });
+  observer.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme'] });
+
+  // 窗口 resize
+  window.addEventListener('resize', () => {
+    trendChart.resize(); pieChart.resize(); ebChart.resize();
+    weakChart.resize(); heatChart.resize();
+  });
+})();
+</script>
+{% endblock %}

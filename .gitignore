@@ -1,0 +1,36 @@
+# 环境变量
+.env
+
+# Python
+__pycache__/
+*.py[cod]
+*.pyo
+*.egg-info/
+dist/
+build/
+venv/
+.venv/
+
+# IDE
+.vscode/
+.idea/
+
+# 数据库（用户数据，不上传）
+*.db
+*.sqlite3
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Claude Code
+.claude/
+
+# 临时/开发文件
+expand.py
+expand_vocab.py
+app.md
+
+# 根目录重复素材（已在 static/pet_assets 中）
+月薪喵.jpg
+static/月薪喵.jpg

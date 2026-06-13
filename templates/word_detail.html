@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+
+{% block title %}{{ word.word }}{% endblock %}
+
+{% block content %}
+<section class="hero" style="padding-bottom: 20px;">
+  <div class="hero-inner">
+    <h1>📖 单词详情</h1>
+  </div>
+</section>
+
+<div class="container" style="max-width: 720px;">
+  <div class="word-card">
+    <div class="word-header">
+      <div class="word-title">{{ word.word }}</div>
+      <div class="word-phonetic">
+        <span>英 {{ word.phonetic_uk }}</span>
+        <button class="btn-audio" onclick="PyWord.playAudio('{{ word.word }}')">🔊</button>
+        <span>美 {{ word.phonetic_us }}</span>
+        <button class="btn-audio" onclick="PyWord.playAudio('{{ word.word }}')">🔊</button>
+      </div>
+    </div>
+
+    <div class="word-meanings">
+      {% for m in word.meanings %}
+      <div class="meaning-item">
+        <span class="meaning-pos">{{ m.pos }}</span>
+        <span class="meaning-def">{{ m.def }}</span>
+      </div>
+      {% endfor %}
+    </div>
+
+    {% if word.exam_meaning %}
+    <div class="word-section">
+      <div class="word-section-title">🎯 考义</div>
+      <div class="word-section-content">{{ word.exam_meaning }}</div>
+    </div>
+    {% endif %}
+
+    {% if word.frequency and word.frequency.level %}
+    <div class="word-section">
+      <div class="word-section-title">⭐ 词频</div>
+      <div class="word-section-content">
+        {{ '⭐' * word.frequency.level }} {{ word.frequency.desc }}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if word.example and word.example.sentence %}
+    <div class="word-section">
+      <div class="word-section-title">📖 真题例句</div>
+      <div class="example-box">
+        <div class="example-en">{{ word.example.sentence }}</div>
+        <div class="example-cn">{{ word.example.translation }}</div>
+        {% if word.example.source %}
+        <span class="example-source">{{ word.example.source }}</span>
+        {% endif %}
+      </div>
+    </div>
+    {% endif %}
+
+    {% if word.etymology %}
+    <div class="word-section">
+      <div class="word-section-title">🔗 词根词缀</div>
+      <div class="word-section-content">{{ word.etymology }}</div>
+    </div>
+    {% endif %}
+
+    {% if word.derivatives %}
+    <div class="word-section">
+      <div class="word-section-title">📝 派生词</div>
+      <div class="word-section-content">
+        {% for d in word.derivatives %}
+        <p style="margin-bottom:6px">
+          <strong>{{ d.word }}</strong> <span class="tag tag-accent">{{ d.pos }}</span> {{ d.def }}
+        </p>
+        {% endfor %}
+      </div>
+    </div>
+    {% endif %}
+  </div>
+
+  <div class="action-bar" style="margin-top: 32px; margin-bottom: 40px;">
+    <a href="/learn" class="btn btn-primary">继续学习</a>
+    <a href="/review" class="btn btn-outline">去复习</a>
+    <a href="/" class="btn btn-ghost">返回看板</a>
+  </div>
+</div>
+{% endblock %}

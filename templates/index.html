@@ -1,0 +1,441 @@
+{% extends "base.html" %}
+
+{% block title %}学习看板{% endblock %}
+
+{% block content %}
+<section class="hero hero-wrap">
+  <!-- 动态背景层 -->
+  <div class="hero-bg">
+    <div class="mesh-wrap"><div class="mesh"></div></div>
+    <!-- 漂浮光斑 -->
+    <div class="floating-orbs">
+      <div class="orb orb-1"></div>
+      <div class="orb orb-2"></div>
+      <div class="orb orb-3"></div>
+      <div class="orb orb-4"></div>
+      <div class="orb orb-5"></div>
+    </div>
+    <!-- 漂浮单词粒子 -->
+    <canvas id="wordCanvas"></canvas>
+  </div>
+
+  <div class="hero-inner">
+    <h1>今日词汇任务 <em>Ready</em></h1>
+    <p class="lead">
+      艾宾浩斯遗忘曲线驱动的智能复习 · Python术语彩蛋词库 · 温馨专注体验
+    </p>
+
+    <div class="stats-grid">
+      <div class="stat-card tint-coral">
+        <div class="stat-value">{{ stats.today.reviewed or 0 }}</div>
+        <div class="stat-label">今日已学</div>
+      </div>
+      <div class="stat-card tint-mint">
+        <div class="stat-value success">{{ stats.words.mastered or 0 }}</div>
+        <div class="stat-label">已掌握</div>
+      </div>
+      <div class="stat-card tint-sky">
+        <div class="stat-value warning">{{ stats.words.reviewing or 0 }}</div>
+        <div class="stat-label">复习中</div>
+      </div>
+      <div class="stat-card tint-lavender">
+        <div class="stat-value">{{ stats.today.streak or 0 }}</div>
+        <div class="stat-label">连续打卡</div>
+      </div>
+    </div>
+
+    <div class="action-bar">
+      <a href="/review" class="btn btn-primary btn-lg">
+        🔄 开始复习
+        {% if stats.words.reviewing > 0 %}
+        <span class="tag tag-success" style="margin-left:4px">{{ stats.words.reviewing }}</span>
+        {% endif %}
+      </a>
+      <a href="/learn" class="btn btn-outline btn-lg">📖 学新词</a>
+      <a href="/spell" class="btn btn-ghost btn-lg">✏️ 拼写训练</a>
+    </div>
+  </div>
+</section>
+
+<section class="container" style="margin-top: 40px;">
+  <div class="dashboard-grid">
+    <!-- 学习日历 -->
+    <div class="dashboard-card">
+      <h3>📅 学习日历</h3>
+      <div class="calendar-header">
+        <span>日</span><span>一</span><span>二</span><span>三</span><span>四</span><span>五</span><span>六</span>
+      </div>
+      <div class="calendar-grid" id="calendarGrid"></div>
+    </div>
+
+    <!-- 薄弱词汇 / 错题本 -->
+    <div class="dashboard-card">
+      <h3>❌ 错题本</h3>
+      {% if stats.weak_words %}
+        {% for w in stats.weak_words %}
+        <div class="weak-word-item">
+          <span class="weak-word-name">{{ w.word }}</span>
+          <span class="weak-word-tag">错误 {{ w.wrong_count }} 次</span>
+        </div>
+        {% endfor %}
+        <div style="margin-top:12px;">
+          <a href="/mistakes" class="btn btn-primary btn-sm">查看全部错题</a>
+        </div>
+      {% else %}
+        <p style="font-size:14px;color:var(--ink-muted);text-align:center;padding:20px 0;">
+          暂无薄弱词汇，继续保持！🎉
+        </p>
+      {% endif %}
+    </div>
+  </div>
+</section>
+
+<!-- 每日英语名句 -->
+<section class="container" style="margin-top: 12px;">
+  <div class="quotes-section">
+    <h3 class="quotes-title">✨ 每日英语名句</h3>
+    <div class="quotes-grid" id="quotesGrid"></div>
+  </div>
+</section>
+
+<style>
+/* ====== 背景层级覆盖 ====== */
+.hero-bg .mesh { z-index: 0; }
+.floating-orbs { z-index: 1; }
+#wordCanvas { z-index: 2; }
+
+/* ====== 漂浮光斑 ====== */
+.floating-orbs {
+  position: absolute; inset: 0; pointer-events: none;
+  overflow: visible;
+}
+.orb {
+  position: absolute; border-radius: 50%;
+  filter: blur(60px);
+  opacity: 0.45;
+  animation: orbFloat linear infinite;
+  will-change: transform;
+}
+.orb-1 {
+  width: 320px; height: 320px; top: -10%; left: -5%;
+  background: radial-gradient(circle, #f7a072 0%, #e8453a 60%, transparent 100%);
+  animation-duration: 18s;
+}
+.orb-2 {
+  width: 280px; height: 280px; top: 30%; right: -8%;
+  background: radial-gradient(circle, #ffd166 0%, #f39c12 60%, transparent 100%);
+  animation-duration: 22s; animation-delay: -4s;
+}
+.orb-3 {
+  width: 240px; height: 240px; bottom: 5%; left: 20%;
+  background: radial-gradient(circle, #a29bfe 0%, #7b5bff 60%, transparent 100%);
+  animation-duration: 20s; animation-delay: -8s;
+}
+.orb-4 {
+  width: 200px; height: 200px; top: 10%; left: 50%;
+  background: radial-gradient(circle, #06d6a0 0%, #27ae60 60%, transparent 100%);
+  animation-duration: 25s; animation-delay: -12s;
+}
+.orb-5 {
+  width: 260px; height: 260px; bottom: -5%; right: 15%;
+  background: radial-gradient(circle, #ff9a9e 0%, #e8453a 50%, transparent 100%);
+  animation-duration: 19s; animation-delay: -6s;
+}
+
+@keyframes orbFloat {
+  0%   { transform: translate(0, 0) scale(1); }
+  20%  { transform: translate(60px, -40px) scale(1.08); }
+  40%  { transform: translate(-30px, 50px) scale(0.95); }
+  60%  { transform: translate(40px, 30px) scale(1.12); }
+  80%  { transform: translate(-50px, -20px) scale(1.02); }
+  100% { transform: translate(0, 0) scale(1); }
+}
+
+/* 暗色主题下光斑调整 */
+[data-theme="dark"] .orb { opacity: 0.18; filter: blur(80px); }
+[data-theme="dark"] .orb-1 { background: radial-gradient(circle, #7c2d12 0%, #991b1b 60%, transparent 100%); }
+[data-theme="dark"] .orb-2 { background: radial-gradient(circle, #78350f 0%, #92400e 60%, transparent 100%); }
+[data-theme="dark"] .orb-3 { background: radial-gradient(circle, #312e81 0%, #4c1d95 60%, transparent 100%); }
+[data-theme="dark"] .orb-4 { background: radial-gradient(circle, #064e3b 0%, #065f46 60%, transparent 100%); }
+[data-theme="dark"] .orb-5 { background: radial-gradient(circle, #7f1d1d 0%, #991b1b 60%, transparent 100%); }
+
+/* ====== 单词粒子画布 ====== */
+#wordCanvas {
+  position: absolute; top: 0; left: 0; z-index: 2;
+  pointer-events: none;
+  width: 100%; height: 100%;
+}
+
+/* ====== 英语名句 ====== */
+.quotes-section { margin-bottom: 40px; }
+.quotes-title {
+  font-size: 20px; font-weight: 700; color: var(--ink-bright);
+  margin-bottom: 18px;
+}
+.quotes-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 18px;
+}
+.quote-card {
+  background: var(--surface-card);
+  border: 1px solid var(--border);
+  border-radius: var(--r-xl);
+  padding: 22px 24px;
+  position: relative;
+  overflow: hidden;
+  transition: transform 0.2s ease, box-shadow 0.2s ease;
+}
+.quote-card:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-card);
+}
+.quote-card::before {
+  content: "❝";
+  position: absolute; top: 8px; left: 14px;
+  font-size: 42px; line-height: 1;
+  color: var(--accent); opacity: 0.12;
+  pointer-events: none;
+}
+.quote-en {
+  font-size: 15px; font-weight: 500; line-height: 1.6;
+  color: var(--ink-bright);
+  font-style: italic;
+  margin-bottom: 10px;
+}
+.quote-cn {
+  font-size: 13px; color: var(--ink-muted); line-height: 1.5;
+  margin-bottom: 10px;
+}
+.quote-author {
+  font-size: 12px; color: var(--accent);
+  font-weight: 600; text-align: right;
+}
+.quote-card.tint-warm { border-left: 4px solid #E8453A; }
+.quote-card.tint-gold { border-left: 4px solid #F39C12; }
+.quote-card.tint-mint { border-left: 4px solid #27AE60; }
+.quote-card.tint-sky  { border-left: 4px solid #3498DB; }
+.quote-card.tint-purple { border-left: 4px solid #7B5BFF; }
+.quote-card.tint-pink  { border-left: 4px solid #E84393; }
+
+@media (max-width: 640px) {
+  .quotes-grid { grid-template-columns: 1fr; }
+}
+
+</style>
+
+<script>
+(function() {
+  // ====== 日历 ======
+  const grid = document.getElementById('calendarGrid');
+  const checkedDates = {{ stats.calendar | tojson }};
+  const checkedSet = new Set(checkedDates.map(d => d.date));
+
+  const today = new Date();
+  const year = today.getFullYear();
+  const month = today.getMonth();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const firstDay = new Date(year, month, 1).getDay();
+
+  for (let i = 0; i < firstDay; i++) {
+    grid.appendChild(document.createElement('div'));
+  }
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr = `${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+    const cell = document.createElement('div');
+    cell.className = 'calendar-day';
+    cell.textContent = d;
+    if (checkedSet.has(dateStr)) cell.classList.add('checked');
+    if (d === today.getDate()) cell.classList.add('today');
+    grid.appendChild(cell);
+  }
+
+  // ====== 单词粒子动画 ======
+  const canvas = document.getElementById('wordCanvas');
+  const ctx = canvas ? canvas.getContext('2d') : null;
+  const heroWrap = canvas ? canvas.closest('.hero-wrap') : null;
+
+  const WORDS = [
+    'abandon','abundant','accelerate','acknowledge','advocate','ambiguous',
+    'anticipate','benevolent','compromise','consecutive','contemplate',
+    'deliberate','eloquent','enhance','foster','fundamental','hectic',
+    'imminent','inevitable','legitimate','mechanism','negotiate','perceive',
+    'preliminary','reinforce','sophisticated','substantial','tentative',
+    'tremendous','unanimous','versatile','withstand','algorithm','iteration',
+    'recursion','variable','function','parameter','exception','module',
+    'inheritance','decorator','lambda','comprehension','generator',
+    'diminish','profound','diligent','scrutinize','endeavor'
+  ];
+
+  let particles = [];
+  let animId = null;
+  let w, h;
+
+  function resize() {
+    const rect = heroWrap.getBoundingClientRect();
+    w = rect.width;
+    h = rect.height;
+    canvas.width = w * devicePixelRatio;
+    canvas.height = h * devicePixelRatio;
+    canvas.style.width = w + 'px';
+    canvas.style.height = h + 'px';
+    ctx.setTransform(devicePixelRatio, 0, 0, devicePixelRatio, 0, 0);
+  }
+
+  function createParticle() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+    const colors = isDark
+      ? ['rgba(255,107,107,0.18)','rgba(243,156,18,0.15)','rgba(162,155,254,0.14)','rgba(46,204,113,0.14)']
+      : ['rgba(232,69,58,0.10)','rgba(243,156,18,0.08)','rgba(123,91,255,0.08)','rgba(39,174,96,0.08)'];
+    return {
+      x: Math.random() * w,
+      y: h + 20 + Math.random() * 60,
+      vx: (Math.random() - 0.5) * 0.3,
+      vy: -(0.2 + Math.random() * 0.5),
+      word: WORDS[Math.floor(Math.random() * WORDS.length)],
+      size: 11 + Math.random() * 5,
+      color: colors[Math.floor(Math.random() * colors.length)],
+      opacity: 0,
+      maxOpacity: 0.4 + Math.random() * 0.5,
+      fadeIn: true,
+      rotation: (Math.random() - 0.5) * 0.15,
+      rotSpeed: (Math.random() - 0.5) * 0.002,
+      phase: Math.random() * Math.PI * 2
+    };
+  }
+
+  function init() {
+    resize();
+    particles = [];
+    const count = Math.min(28, Math.floor(w / 50));
+    for (let i = 0; i < count; i++) {
+      const p = createParticle();
+      // 散布在画面各处，不只是底部
+      p.y = Math.random() * h;
+      p.opacity = p.maxOpacity * (0.3 + Math.random() * 0.7);
+      p.fadeIn = false;
+      particles.push(p);
+    }
+  }
+
+  function update() {
+    const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+
+    particles.forEach((p, i) => {
+      p.x += p.vx + Math.sin(p.phase) * 0.15;
+      p.y += p.vy;
+      p.phase += 0.008;
+      p.rotation += p.rotSpeed;
+
+      // 淡入
+      if (p.fadeIn) {
+        p.opacity += 0.005;
+        if (p.opacity >= p.maxOpacity) p.fadeIn = false;
+      }
+
+      // 飘出顶部后回收
+      if (p.y < -30 || p.x < -60 || p.x > w + 60) {
+        particles[i] = createParticle();
+      }
+    });
+  }
+
+  function draw() {
+    ctx.clearRect(0, 0, w, h);
+    particles.forEach(p => {
+      ctx.save();
+      ctx.translate(p.x, p.y);
+      ctx.rotate(p.rotation);
+      ctx.font = `500 ${p.size}px "Inter", "JetBrains Mono", monospace`;
+      ctx.fillStyle = p.color;
+      ctx.globalAlpha = p.opacity;
+      ctx.textAlign = 'center';
+      ctx.textBaseline = 'middle';
+      ctx.fillText(p.word, 0, 0);
+      ctx.restore();
+    });
+  }
+
+  function loop() {
+    update();
+    draw();
+    animId = requestAnimationFrame(loop);
+  }
+
+  // 启动
+  if (canvas && heroWrap) {
+    init();
+    loop();
+  }
+
+  // 响应窗口大小
+  let resizeTimer;
+  window.addEventListener('resize', () => {
+    clearTimeout(resizeTimer);
+    resizeTimer = setTimeout(() => {
+      cancelAnimationFrame(animId);
+      init();
+      loop();
+    }, 200);
+  });
+
+  // 可见性切换（切换标签页时暂停，节省性能）
+  document.addEventListener('visibilitychange', () => {
+    if (document.hidden) {
+      cancelAnimationFrame(animId);
+    } else {
+      loop();
+    }
+  });
+
+  // ====== 英语名句 ======
+  const allQuotes = [
+
+    { en: "The only way to do great work is to love what you do.", cn: "做伟大工作的唯一途径就是热爱你所做的事。", author: "Steve Jobs", tint: "warm" },
+    { en: "In the middle of difficulty lies opportunity.", cn: "在困难之中蕴藏着机遇。", author: "Albert Einstein", tint: "gold" },
+    { en: "It does not matter how slowly you go as long as you do not stop.", cn: "不在乎走得多慢，只要你不停步。", author: "Confucius", tint: "mint" },
+    { en: "The future belongs to those who believe in the beauty of their dreams.", cn: "未来属于那些相信梦想之美的人。", author: "Eleanor Roosevelt", tint: "sky" },
+    { en: "Success is not final, failure is not fatal: it is the courage to continue that counts.", cn: "成功不是终点，失败也非末日，最重要的是继续前进的勇气。", author: "Winston Churchill", tint: "purple" },
+    { en: "A journey of a thousand miles begins with a single step.", cn: "千里之行，始于足下。", author: "Lao Tzu", tint: "mint" },
+    { en: "The best time to plant a tree was 20 years ago. The second best time is now.", cn: "种一棵树最好的时间是二十年前，其次是现在。", author: "Chinese Proverb", tint: "warm" },
+    { en: "Knowledge is power.", cn: "知识就是力量。", author: "Francis Bacon", tint: "sky" },
+    { en: "Live as if you were to die tomorrow. Learn as if you were to live forever.", cn: "像明天就要死去一样地活着，像永远不会死去一样地学习。", author: "Mahatma Gandhi", tint: "gold" },
+    { en: "The mind is everything. What you think you become.", cn: "心即一切。你想什么，就会成为什么。", author: "Buddha", tint: "purple" },
+    { en: "Education is the most powerful weapon which you can use to change the world.", cn: "教育是你可以用来改变世界的最强大的武器。", author: "Nelson Mandela", tint: "mint" },
+    { en: "Not all those who wander are lost.", cn: "并非所有流浪者都迷失了方向。", author: "J.R.R. Tolkien", tint: "pink" },
+    { en: "To be yourself in a world that is constantly trying to make you something else is the greatest accomplishment.", cn: "在一个不断试图让你变成别人的世界里做你自己，是最大的成就。", author: "Ralph Waldo Emerson", tint: "warm" },
+    { en: "I have not failed. I've just found 10,000 ways that won't work.", cn: "我没有失败，我只是找到了一万种行不通的方法。", author: "Thomas Edison", tint: "gold" },
+    { en: "The only limit to our realization of tomorrow will be our doubts of today.", cn: "实现明天理想的唯一障碍是今天的疑虑。", author: "Franklin D. Roosevelt", tint: "sky" },
+    { en: "Words are, of course, the most powerful drug used by mankind.", cn: "言语当然是人类使用的最强大的药物。", author: "Rudyard Kipling", tint: "purple" },
+    { en: "Reading is to the mind what exercise is to the body.", cn: "读书之于精神，正如运动之于身体。", author: "Joseph Addison", tint: "mint" },
+    { en: "Where there is a will, there is a way.", cn: "有志者事竟成。", author: "English Proverb", tint: "pink" },
+  ];
+
+  // 每天按日期随机选取 6 条
+  const todayDate = new Date();
+  const seed = todayDate.getFullYear() * 10000 + (todayDate.getMonth() + 1) * 100 + todayDate.getDate();
+  function seededShuffle(arr, s) {
+    const a = [...arr];
+    let rng = s;
+    for (let i = a.length - 1; i > 0; i--) {
+      rng = (rng * 16807 + 0) % 2147483647;
+      const j = rng % (i + 1);
+      [a[i], a[j]] = [a[j], a[i]];
+    }
+    return a;
+  }
+  const daily = seededShuffle(allQuotes, seed).slice(0, 6);
+
+  const quotesGrid = document.getElementById('quotesGrid');
+  daily.forEach((q, i) => {
+    quotesGrid.innerHTML += `
+      <div class="quote-card tint-${q.tint}" style="animation: fadeInUp 0.4s ease ${i * 0.08}s both">
+        <div class="quote-en">${q.en}</div>
+        <div class="quote-cn">${q.cn}</div>
+        <div class="quote-author">—— ${q.author}</div>
+      </div>
+    `;
+  });
+})();
+</script>
+{% endblock %}

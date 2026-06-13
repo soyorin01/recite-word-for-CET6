@@ -1,0 +1,897 @@
+{% extends "base.html" %}
+
+{% block title %}六级写作{% endblock %}
+
+{% block content %}
+<section class="hero" style="padding-bottom: 24px;">
+  <div class="hero-inner">
+    <h1>✍️ 六级写作技巧</h1>
+    <p class="lead">
+      高分模板 · 万能句型 · 逻辑衔接 · 常见误区 · 实战策略
+    </p>
+  </div>
+</section>
+
+<section class="container writing-page">
+
+  <!-- 快速导航 -->
+  <div class="writing-nav">
+    <a href="#templates" class="writing-nav-item">📝 写作模板</a>
+    <a href="#sentences" class="writing-nav-item">💎 万能句型</a>
+    <a href="#transitions" class="writing-nav-item">🔗 衔接词</a>
+    <a href="#phrases" class="writing-nav-item">🌟 高分替换</a>
+    <a href="#mistakes" class="writing-nav-item">⚠️ 常见误区</a>
+    <a href="#strategy" class="writing-nav-item">🎯 实战策略</a>
+    <a href="#topics" class="writing-nav-item">📋 真题话题</a>
+    <a href="#chart-sentences" class="writing-nav-item">📊 图表句型</a>
+    <a href="#letter-phrases" class="writing-nav-item">📮 书信用语</a>
+    <a href="#scoring" class="writing-nav-item">📏 评分标准</a>
+  </div>
+
+  <!-- ====== 一、写作模板 ====== -->
+  <div class="writing-section" id="templates">
+    <h2 class="section-title">📝 三大题型模板</h2>
+
+    <!-- 议论文 -->
+    <div class="template-card">
+      <div class="template-header" onclick="toggleTemplate(this)">
+        <span class="template-type type-argument">议论文</span>
+        <span class="template-title">观点论证型 · 三段式</span>
+        <span class="template-arrow">▼</span>
+      </div>
+      <div class="template-body">
+        <div class="template-part">
+          <div class="part-label">第一段 · 引出话题 + 表明立场</div>
+          <div class="part-content">
+            <p>Nowadays, there is a growing concern over <span class="hl">[话题]</span>. Some people argue that <span class="hl">[观点A]</span>, while others maintain that <span class="hl">[观点B]</span>. As far as I am concerned, I firmly believe that <span class="hl">[你的立场]</span>.</p>
+          </div>
+        </div>
+        <div class="template-part">
+          <div class="part-label">第二段 · 论证理由（2-3点）</div>
+          <div class="part-content">
+            <p>To begin with, <span class="hl">[理由1]</span>. A compelling example is that <span class="hl">[举例]</span>. Furthermore, <span class="hl">[理由2]</span>. According to a recent survey, <span class="hl">[数据/调查]</span>. Last but not least, <span class="hl">[理由3]</span>.</p>
+          </div>
+        </div>
+        <div class="template-part">
+          <div class="part-label">第三段 · 总结 + 建议</div>
+          <div class="part-content">
+            <p>Taking all these factors into consideration, we may safely draw the conclusion that <span class="hl">[重申立场]</span>. Therefore, it is imperative that <span class="hl">[建议/措施]</span>. Only in this way can we <span class="hl">[美好愿景]</span>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 利弊分析型 -->
+    <div class="template-card">
+      <div class="template-header" onclick="toggleTemplate(this)">
+        <span class="template-type type-argument">议论文</span>
+        <span class="template-title">利弊分析型 · 平衡式</span>
+        <span class="template-arrow">▼</span>
+      </div>
+      <div class="template-body">
+        <div class="template-part">
+          <div class="part-label">第一段 · 引出话题 + 承认两面性</div>
+          <div class="part-content">
+            <p>With the rapid development of modern society, <span class="hl">[话题]</span> has aroused widespread public attention. Like a double-edged sword, it brings both benefits and potential drawbacks.</p>
+          </div>
+        </div>
+        <div class="template-part">
+          <div class="part-label">第二段 · 分析利与弊</div>
+          <div class="part-content">
+            <p>On the one hand, <span class="hl">[好处1]</span>. For instance, <span class="hl">[例子]</span>. On the other hand, <span class="hl">[坏处1]</span>. A typical example is that <span class="hl">[例子]</span>. Therefore, we should adopt a balanced perspective.</p>
+          </div>
+        </div>
+        <div class="template-part">
+          <div class="part-label">第三段 · 表明立场 + 总结</div>
+          <div class="part-content">
+            <p>From my perspective, the advantages of <span class="hl">[话题]</span> outweigh its disadvantages, provided that <span class="hl">[前提条件]</span>. All in all, only by <span class="hl">[建议]</span> can we maximize its benefits while minimizing its negative impact.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 问题解决型 -->
+    <div class="template-card">
+      <div class="template-header" onclick="toggleTemplate(this)">
+        <span class="template-type type-argument">议论文</span>
+        <span class="template-title">问题解决型 · 现象-原因-对策</span>
+        <span class="template-arrow">▼</span>
+      </div>
+      <div class="template-body">
+        <div class="template-part">
+          <div class="part-label">第一段 · 描述现象</div>
+          <div class="part-content">
+            <p>In recent years, the issue of <span class="hl">[社会现象]</span> has become increasingly severe. It is not uncommon to see that <span class="hl">[具体表现]</span>, which has raised great concern among the public.</p>
+          </div>
+        </div>
+        <div class="template-part">
+          <div class="part-label">第二段 · 分析原因</div>
+          <div class="part-content">
+            <p>A number of factors can account for this phenomenon. To start with, <span class="hl">[原因1]</span>. In addition, <span class="hl">[原因2]</span>. Most importantly, <span class="hl">[原因3]</span> has made the situation even worse.</p>
+          </div>
+        </div>
+        <div class="template-part">
+          <div class="part-label">第三段 · 提出建议</div>
+          <div class="part-content">
+            <p>To tackle this problem, effective measures should be taken from multiple perspectives. For individuals, <span class="hl">[个人措施]</span>. For the government and relevant authorities, <span class="hl">[政府措施]</span>. Only through joint efforts can we expect a brighter future.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 对比选择型 -->
+    <div class="template-card">
+      <div class="template-header" onclick="toggleTemplate(this)">
+        <span class="template-type type-argument">议论文</span>
+        <span class="template-title">对比选择型 · A or B</span>
+        <span class="template-arrow">▼</span>
+      </div>
+      <div class="template-body">
+        <div class="template-part">
+          <div class="part-label">第一段 · 引出争议</div>
+          <div class="part-content">
+            <p>When it comes to <span class="hl">[话题]</span>, opinions vary considerably. Some individuals prefer <span class="hl">[选项A]</span>, whereas others are in favor of <span class="hl">[选项B]</span>. Personally, I would choose <span class="hl">[你的选择]</span> for the following reasons.</p>
+          </div>
+        </div>
+        <div class="template-part">
+          <div class="part-label">第二段 · 对比论证</div>
+          <div class="part-content">
+            <p>The primary reason is that <span class="hl">[理由1]</span>. Compared with <span class="hl">[另一选项]</span>, <span class="hl">[你的选择]</span> can <span class="hl">[具体优势]</span>. Moreover, <span class="hl">[理由2]</span>. It is evident that <span class="hl">[总结优势]</span>.</p>
+          </div>
+        </div>
+        <div class="template-part">
+          <div class="part-label">第三段 · 总结重申</div>
+          <div class="part-content">
+            <p>In conclusion, despite the merits of <span class="hl">[另一选项]</span>, I still firmly support <span class="hl">[你的选择]</span> because <span class="hl">[一句话总结]</span>. Therefore, <span class="hl">[建议/号召]</span>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 名言哲理型 -->
+    <div class="template-card">
+      <div class="template-header" onclick="toggleTemplate(this)">
+        <span class="template-type type-argument">议论文</span>
+        <span class="template-title">名言哲理型 · 引语阐释</span>
+        <span class="template-arrow">▼</span>
+      </div>
+      <div class="template-body">
+        <div class="template-part">
+          <div class="part-label">第一段 · 引用名言 + 解释含义</div>
+          <div class="part-content">
+            <p>The well-known saying "<span class="hl">[名言]</span>" has been widely accepted for generations. In my understanding, it conveys the idea that <span class="hl">[阐释含义]</span>. This proverb is particularly relevant in today's rapidly changing world.</p>
+          </div>
+        </div>
+        <div class="template-part">
+          <div class="part-label">第二段 · 举例论证</div>
+          <div class="part-content">
+            <p>Numerous examples can be found to illustrate this point. <span class="hl">[例子1]</span>. Another convincing example is that <span class="hl">[例子2]</span>. These cases clearly demonstrate that <span class="hl">[回扣名言]</span>.</p>
+          </div>
+        </div>
+        <div class="template-part">
+          <div class="part-label">第三段 · 联系自身 + 总结</div>
+          <div class="part-content">
+            <p>As college students, we should bear this wisdom in mind and apply it to our daily life. <span class="hl">[具体做法]</span>. In a nutshell, <span class="hl">[重申名言意义]</span> is the key to <span class="hl">[美好结果]</span>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 图表作文 -->
+    <div class="template-card">
+      <div class="template-header" onclick="toggleTemplate(this)">
+        <span class="template-type type-chart">图表作文</span>
+        <span class="template-title">数据描述 + 原因分析 + 趋势预测</span>
+        <span class="template-arrow">▼</span>
+      </div>
+      <div class="template-body">
+        <div class="template-part">
+          <div class="part-label">第一段 · 描述图表</div>
+          <div class="part-content">
+            <p>As is clearly illustrated in the chart/graph, <span class="hl">[主要趋势]</span>. The data shows that <span class="hl">[具体数字]</span> increased/decreased from <span class="hl">[X]</span> to <span class="hl">[Y]</span> during the period from <span class="hl">[起始年]</span> to <span class="hl">[结束年]</span>. Particularly noteworthy is the fact that <span class="hl">[突出数据]</span>.</p>
+          </div>
+        </div>
+        <div class="template-part">
+          <div class="part-label">第二段 · 分析原因</div>
+          <div class="part-content">
+            <p>Several factors contribute to this phenomenon. First and foremost, <span class="hl">[原因1]</span>. In addition, <span class="hl">[原因2]</span>. Moreover, <span class="hl">[原因3]</span> also plays a significant role in shaping this trend.</p>
+          </div>
+        </div>
+        <div class="template-part">
+          <div class="part-label">第三段 · 预测 + 建议</div>
+          <div class="part-content">
+            <p>Based on the analysis above, it is reasonable to predict that <span class="hl">[趋势预测]</span>. To address this issue, <span class="hl">[建议]</span> should be taken. With joint efforts, <span class="hl">[积极展望]</span>.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 书信 -->
+    <div class="template-card">
+      <div class="template-header" onclick="toggleTemplate(this)">
+        <span class="template-type type-letter">书信</span>
+        <span class="template-title">建议信/投诉信/求职信 通用框架</span>
+        <span class="template-arrow">▼</span>
+      </div>
+      <div class="template-body">
+        <div class="template-part">
+          <div class="part-label">开头 · 表明身份 + 写信目的</div>
+          <div class="part-content">
+            <p>Dear <span class="hl">[称谓]</span>,</p>
+            <p>I am writing this letter to <span class="hl">[表达目的：express my concern / offer some suggestions / apply for]</span>. I believe that <span class="hl">[核心观点]</span>.</p>
+          </div>
+        </div>
+        <div class="template-part">
+          <div class="part-label">正文 · 具体内容（分点）</div>
+          <div class="part-content">
+            <p>For one thing, <span class="hl">[要点1]</span>. For another, <span class="hl">[要点2]</span>. Meanwhile, I would like to suggest that <span class="hl">[建议]</span>.</p>
+          </div>
+        </div>
+        <div class="template-part">
+          <div class="part-label">结尾 · 期待回复 + 礼貌收束</div>
+          <div class="part-content">
+            <p>I sincerely hope that you will take my suggestions into consideration. I am looking forward to your favorable reply at your earliest convenience.</p>
+            <p>Yours sincerely,<br/><span class="hl">[你的名字]</span></p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 二、万能句型 ====== -->
+  <div class="writing-section" id="sentences">
+    <h2 class="section-title">💎 万能高分句型</h2>
+
+    <div class="sentence-grid">
+      <div class="sentence-card sc-open">
+        <div class="sc-tag">开头</div>
+        <div class="sc-en">There is no denying that...</div>
+        <div class="sc-cn">不可否认的是……</div>
+      </div>
+      <div class="sentence-card sc-open">
+        <div class="sc-tag">开头</div>
+        <div class="sc-en">It is universally acknowledged that...</div>
+        <div class="sc-cn">众所周知……</div>
+      </div>
+      <div class="sentence-card sc-open">
+        <div class="sc-tag">开头</div>
+        <div class="sc-en">With the rapid development of..., ... has become a matter of great concern.</div>
+        <div class="sc-cn">随着……的快速发展，……已成为人们关注的焦点。</div>
+      </div>
+      <div class="sentence-card sc-body">
+        <div class="sc-tag">论证</div>
+        <div class="sc-en">A case in point is that...</div>
+        <div class="sc-cn">一个典型的例子是……</div>
+      </div>
+      <div class="sentence-card sc-body">
+        <div class="sc-tag">论证</div>
+        <div class="sc-en">It is worth noting that...</div>
+        <div class="sc-cn">值得注意的是……</div>
+      </div>
+      <div class="sentence-card sc-body">
+        <div class="sc-tag">论证</div>
+        <div class="sc-en">Nothing can be compared with... in terms of...</div>
+        <div class="sc-cn">在……方面，没有什么能与……相比。</div>
+      </div>
+      <div class="sentence-card sc-body">
+        <div class="sc-tag">论证</div>
+        <div class="sc-en">The more..., the more...</div>
+        <div class="sc-cn">越……就越……</div>
+      </div>
+      <div class="sentence-card sc-end">
+        <div class="sc-tag">结尾</div>
+        <div class="sc-en">Taking all these factors into account, we may safely conclude that...</div>
+        <div class="sc-cn">综合考虑所有因素，我们可以得出结论……</div>
+      </div>
+      <div class="sentence-card sc-end">
+        <div class="sc-tag">结尾</div>
+        <div class="sc-en">It is high time that we took effective measures to...</div>
+        <div class="sc-cn">是我们采取有效措施……的时候了。</div>
+      </div>
+      <div class="sentence-card sc-end">
+        <div class="sc-tag">结尾</div>
+        <div class="sc-en">Only in this way can we...</div>
+        <div class="sc-cn">只有这样我们才能……（倒装句，加分项）</div>
+      </div>
+      <div class="sentence-card sc-end">
+        <div class="sc-tag">结尾</div>
+        <div class="sc-en">In a nutshell, ... is of vital importance to...</div>
+        <div class="sc-cn">简而言之，……对……至关重要。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 三、衔接词 ====== -->
+  <div class="writing-section" id="transitions">
+    <h2 class="section-title">🔗 逻辑衔接词速查</h2>
+
+    <div class="transition-grid">
+      <div class="transition-group">
+        <h4>🟢 递进</h4>
+        <div class="transition-tags">
+          <span>Furthermore</span><span>Moreover</span><span>In addition</span><span>Besides</span><span>What's more</span><span>More importantly</span><span>Apart from that</span>
+        </div>
+      </div>
+      <div class="transition-group">
+        <h4>🔴 转折</h4>
+        <div class="transition-tags">
+          <span>However</span><span>Nevertheless</span><span>On the contrary</span><span>Despite this</span><span>Whereas</span><span>On the other hand</span><span>In contrast</span>
+        </div>
+      </div>
+      <div class="transition-group">
+        <h4>🔵 因果</h4>
+        <div class="transition-tags">
+          <span>Therefore</span><span>Consequently</span><span>As a result</span><span>Thus</span><span>Hence</span><span>Due to</span><span>Owing to</span><span>On account of</span>
+        </div>
+      </div>
+      <div class="transition-group">
+        <h4>🟡 举例</h4>
+        <div class="transition-tags">
+          <span>For instance</span><span>For example</span><span>Such as</span><span>A case in point</span><span>To illustrate</span><span>Take... for example</span>
+        </div>
+      </div>
+      <div class="transition-group">
+        <h4>🟣 总结</h4>
+        <div class="transition-tags">
+          <span>In conclusion</span><span>To sum up</span><span>All in all</span><span>In a nutshell</span><span>On the whole</span><span>In brief</span>
+        </div>
+      </div>
+      <div class="transition-group">
+        <h4>⚪ 对比</h4>
+        <div class="transition-tags">
+          <span>Similarly</span><span>Likewise</span><span>Compared with</span><span>In comparison</span><span>While</span><span>Whereas</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 四、高分替换 ====== -->
+  <div class="writing-section" id="phrases">
+    <h2 class="section-title">🌟 低级词 → 高级替换</h2>
+
+    <div class="replace-table-wrap">
+      <table class="replace-table">
+        <thead>
+          <tr><th>❌ 低级表达</th><th>✅ 高级替换</th></tr>
+        </thead>
+        <tbody>
+          <tr><td>think</td><td>maintain / hold the view that / reckon</td></tr>
+          <tr><td>important</td><td>crucial / vital / indispensable / paramount</td></tr>
+          <tr><td>many</td><td>a multitude of / numerous / a host of</td></tr>
+          <tr><td>more and more</td><td>an increasing number of / increasingly</td></tr>
+          <tr><td>good</td><td>beneficial / favorable / advantageous</td></tr>
+          <tr><td>bad</td><td>detrimental / adverse / unfavorable</td></tr>
+          <tr><td>because</td><td>on account of / due to the fact that</td></tr>
+          <tr><td>so</td><td>consequently / accordingly / hence</td></tr>
+          <tr><td>very</td><td>exceedingly / remarkably / profoundly</td></tr>
+          <tr><td>help</td><td>facilitate / assist / lend support to</td></tr>
+          <tr><td>show</td><td>demonstrate / illustrate / indicate</td></tr>
+          <tr><td>need</td><td>require / necessitate / call for</td></tr>
+          <tr><td>make</td><td>render / constitute / give rise to</td></tr>
+          <tr><td>get</td><td>obtain / acquire / attain</td></tr>
+          <tr><td>about</td><td>regarding / concerning / with respect to</td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- ====== 五、常见误区 ====== -->
+  <div class="writing-section" id="mistakes">
+    <h2 class="section-title">⚠️ 写作常见误区</h2>
+
+    <div class="mistake-list">
+      <div class="mistake-card">
+        <div class="mistake-num">1</div>
+        <div class="mistake-content">
+          <h4>中式英语直译</h4>
+          <p>❌ "I very like English" → ✅ "I am very fond of English"</p>
+          <p>❌ "open the light" → ✅ "turn on the light"</p>
+        </div>
+      </div>
+      <div class="mistake-card">
+        <div class="mistake-num">2</div>
+        <div class="mistake-content">
+          <h4>主谓不一致</h4>
+          <p>❌ "The number of students are increasing" → ✅ "The number of students is increasing"</p>
+          <p>注意：<code>the number of</code> 做主语谓语用单数，<code>a number of</code> 用复数</p>
+        </div>
+      </div>
+      <div class="mistake-card">
+        <div class="mistake-num">3</div>
+        <div class="mistake-content">
+          <h4>时态混乱</h4>
+          <p>议论文描述普遍现象用<strong>一般现在时</strong>，举例过去的事用<strong>一般过去时</strong>，不要混用。</p>
+        </div>
+      </div>
+      <div class="mistake-card">
+        <div class="mistake-num">4</div>
+        <div class="mistake-content">
+          <h4>流水句（Run-on sentence）</h4>
+          <p>❌ "I like reading it is interesting"</p>
+          <p>✅ "I like reading, which is interesting." 或用分号、连词连接</p>
+        </div>
+      </div>
+      <div class="mistake-card">
+        <div class="mistake-num">5</div>
+        <div class="mistake-content">
+          <h4>词汇重复</h4>
+          <p>一篇作文出现 5 次 "important"，考官会觉得词汇量不足。用同义替换解决。</p>
+        </div>
+      </div>
+      <div class="mistake-card">
+        <div class="mistake-num">6</div>
+        <div class="mistake-content">
+          <h4>模板痕迹过重</h4>
+          <p>背模板不等于照搬，要根据题目灵活调整。阅卷老师一眼能看出"生搬硬套"的模板。</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 六、实战策略 ====== -->
+  <div class="writing-section" id="strategy">
+    <h2 class="section-title">🎯 30分钟写作策略</h2>
+
+    <div class="strategy-timeline">
+      <div class="strategy-step">
+        <div class="step-time">0-3 min</div>
+        <div class="step-content">
+          <h4>审题 + 列提纲</h4>
+          <p>确定题型（议论文/图表/书信）→ 圈关键词 → 列出 2-3 个论点 → 想好开头结尾</p>
+        </div>
+      </div>
+      <div class="strategy-step">
+        <div class="step-time">3-10 min</div>
+        <div class="step-content">
+          <h4>写第一段</h4>
+          <p>引出话题（1-2句）→ 表明立场（1句）→ 约 40-50 词。开门见山，别绕弯。</p>
+        </div>
+      </div>
+      <div class="strategy-step">
+        <div class="step-time">10-22 min</div>
+        <div class="step-content">
+          <h4>写主体段</h4>
+          <p>每个论点用 Topic sentence + Explanation + Example 结构。2-3 个论点，每点 3-4 句。注意衔接词！</p>
+        </div>
+      </div>
+      <div class="strategy-step">
+        <div class="step-time">22-27 min</div>
+        <div class="step-content">
+          <h4>写结尾段</h4>
+          <p>总结观点（换种说法）+ 建议/展望。结尾用倒装句或强调句型加分。约 30-40 词。</p>
+        </div>
+      </div>
+      <div class="strategy-step">
+        <div class="step-time">27-30 min</div>
+        <div class="step-content">
+          <h4>检查修改</h4>
+          <p>主谓一致？时态正确？拼写错误？字数够了吗（150-200词）？字迹工整！</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="strategy-tips">
+      <h4>💡 加分小技巧</h4>
+      <ul>
+        <li>用<strong>倒装句</strong>：Only by doing so can we... / Not only... but also...</li>
+        <li>用<strong>强调句</strong>：It is... that... / It was not until... that...</li>
+        <li>用<strong>虚拟语气</strong>：If it were not for..., ...would... / It is high time that...</li>
+        <li>用<strong>非谓语动词</strong>：Determined to..., he... / Compared with..., ...</li>
+        <li>用<strong>定语从句</strong>：..., which is of great significance</li>
+        <li>字数控制在 <strong>180-200</strong> 最安全，太少扣分，太多浪费时间</li>
+      </ul>
+    </div>
+  </div>
+
+  <!-- ====== 七、历年真题话题 ====== -->
+  <div class="writing-section" id="topics">
+    <h2 class="section-title">📋 近年六级写作真题话题</h2>
+
+    <div class="topic-year-grid">
+      <div class="topic-year">
+        <h4>2024年6月</h4>
+        <div class="topic-tags">
+          <span>数字素养</span><span>大学生心理健康</span><span>AI对教育的影响</span>
+        </div>
+      </div>
+      <div class="topic-year">
+        <h4>2023年12月</h4>
+        <div class="topic-tags">
+          <span>终身学习</span><span>社交媒体的影响</span><span>传统文化的传承</span>
+        </div>
+      </div>
+      <div class="topic-year">
+        <h4>2023年6月</h4>
+        <div class="topic-tags">
+          <span>大学生就业选择</span><span>在线教育的利与弊</span><span>志愿服务</span>
+        </div>
+      </div>
+      <div class="topic-year">
+        <h4>2022年</h4>
+        <div class="topic-tags">
+          <span>低碳生活</span><span>信息过载</span><span>高校创新创业</span>
+        </div>
+      </div>
+      <div class="topic-year">
+        <h4>常考主题</h4>
+        <div class="topic-tags hot">
+          <span>科技与生活</span><span>教育改革</span><span>环境保护</span><span>文化传承</span><span>社会公平</span><span>青年责任</span><span>心理健康</span><span>就业压力</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 八、图表描述句型 ====== -->
+  <div class="writing-section" id="chart-sentences">
+    <h2 class="section-title">📊 图表描述专用句型</h2>
+
+    <div class="sentence-grid">
+      <div class="sentence-card sc-body">
+        <div class="sc-tag">上升趋势</div>
+        <div class="sc-en">There was a dramatic increase in..., rising from X to Y.</div>
+        <div class="sc-cn">……急剧增长，从X上升到Y。</div>
+      </div>
+      <div class="sentence-card sc-body">
+        <div class="sc-tag">上升趋势</div>
+        <div class="sc-en">... experienced a steady growth over the period.</div>
+        <div class="sc-cn">……在这一时期稳步增长。</div>
+      </div>
+      <div class="sentence-card sc-open">
+        <div class="sc-tag">下降趋势</div>
+        <div class="sc-en">... witnessed a sharp decline, dropping by X%.</div>
+        <div class="sc-cn">……大幅下降，降幅达X%。</div>
+      </div>
+      <div class="sentence-card sc-open">
+        <div class="sc-tag">下降趋势</div>
+        <div class="sc-en">The number of... has been on the decrease since...</div>
+        <div class="sc-cn">……的数量自……以来持续减少。</div>
+      </div>
+      <div class="sentence-card sc-end">
+        <div class="sc-tag">波动</div>
+        <div class="sc-en">... fluctuated between X and Y during this period.</div>
+        <div class="sc-cn">……在此期间在X和Y之间波动。</div>
+      </div>
+      <div class="sentence-card sc-end">
+        <div class="sc-tag">占比</div>
+        <div class="sc-en">... accounted for X% of the total, making it the largest/smallest segment.</div>
+        <div class="sc-cn">……占总数的X%，是最大/最小部分。</div>
+      </div>
+      <div class="sentence-card sc-body">
+        <div class="sc-tag">对比</div>
+        <div class="sc-en">In contrast, ... only constituted X%, far less than...</div>
+        <div class="sc-cn">相比之下，……仅占X%，远少于……</div>
+      </div>
+      <div class="sentence-card sc-body">
+        <div class="sc-tag">倍数</div>
+        <div class="sc-en">The figure for... was nearly three times as much as that of...</div>
+        <div class="sc-cn">……的数字几乎是……的三倍。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 九、书信常用语 ====== -->
+  <div class="writing-section" id="letter-phrases">
+    <h2 class="section-title">📮 书信常用语速查</h2>
+
+    <div class="letter-grid">
+      <div class="letter-group">
+        <h4>📧 开头寒暄</h4>
+        <ul>
+          <li>I am writing to express my concern about...</li>
+          <li>I am writing to offer some practical suggestions regarding...</li>
+          <li>I am writing to apply for the position of...</li>
+          <li>I am writing to extend my sincere gratitude for...</li>
+          <li>How is everything going? I am writing to...</li>
+        </ul>
+      </div>
+      <div class="letter-group">
+        <h4>📧 提出建议</h4>
+        <ul>
+          <li>I would like to make the following recommendations.</li>
+          <li>It would be highly appreciated if you could...</li>
+          <li>May I suggest that...?</li>
+          <li>I strongly advise that...</li>
+          <li>Perhaps we could consider...</li>
+        </ul>
+      </div>
+      <div class="letter-group">
+        <h4>📧 表达感谢</h4>
+        <ul>
+          <li>I am truly grateful for your generous help.</li>
+          <li>Words cannot express my appreciation for...</li>
+          <li>Thank you from the bottom of my heart.</li>
+          <li>Your kindness and support mean a lot to me.</li>
+        </ul>
+      </div>
+      <div class="letter-group">
+        <h4>📧 结尾祝福</h4>
+        <ul>
+          <li>I am looking forward to your favorable reply.</li>
+          <li>I sincerely hope that my suggestions will be taken into consideration.</li>
+          <li>Please do not hesitate to contact me if...</li>
+          <li>Best wishes and keep in touch!</li>
+          <li>Wish you all the best in your future endeavors.</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- ====== 十、写作评分标准 ====== -->
+  <div class="writing-section" id="scoring">
+    <h2 class="section-title">📏 写作评分标准（满分15分）</h2>
+
+    <div class="scoring-table-wrap">
+      <table class="replace-table scoring-table">
+        <thead>
+          <tr><th>档次</th><th>分数</th><th>标准</th></tr>
+        </thead>
+        <tbody>
+          <tr><td class="score-high">13-15</td><td>优秀</td><td>切题，表达思想清楚，文字通顺，连贯性好，基本无语言错误，仅有个别小错</td></tr>
+          <tr><td class="score-good">10-12</td><td>良好</td><td>切题，表达思想清楚，文字连贯，有少量语言错误</td></tr>
+          <tr><td class="score-mid">7-9</td><td>中等</td><td>基本切题，有些地方思想表达不够清楚，文字勉强连贯，语言错误相当多</td></tr>
+          <tr><td class="score-low">4-6</td><td>及格</td><td>基本切题，表达思想不清楚，连贯性差，有较多严重语言错误</td></tr>
+          <tr><td class="score-fail">1-3</td><td>不及格</td><td>条理不清，思想紊乱，语言支离破碎，大部分句子有错误</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="strategy-tips" style="margin-top:20px; border-left-color: #E8453A;">
+      <h4>🎯 阅卷老师最看重的3件事</h4>
+      <ul>
+        <li><strong>结构清晰</strong>：三段式，每段主题明确，段首句即观点。阅卷老师 30 秒定档，结构第一印象最重要。</li>
+        <li><strong>语言准确</strong>：主谓一致、时态正确、拼写无误。3个以上严重语法错误直接降档。</li>
+        <li><strong>内容充实</strong>：有具体例证，不做空泛论述。"For example" 后面跟一个具体场景，比说一堆大道理有效。</li>
+      </ul>
+    </div>
+  </div>
+
+</section>
+
+<style>
+.writing-page { padding-bottom: 60px; }
+
+/* 快速导航 */
+.writing-nav {
+  display: flex; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 36px;
+  position: sticky; top: 64px; z-index: 20;
+  background: var(--canvas); padding: 12px 0;
+}
+.writing-nav-item {
+  padding: 8px 16px; border-radius: var(--r-pill);
+  background: var(--surface-card); border: 1px solid var(--border);
+  font-size: 14px; color: var(--ink-muted);
+  text-decoration: none; transition: all .15s;
+}
+.writing-nav-item:hover { border-color: var(--accent); color: var(--accent); }
+
+/* 章节标题 */
+.writing-section { margin-bottom: 48px; }
+.section-title {
+  font-size: 22px; font-weight: 700; color: var(--ink-bright);
+  margin-bottom: 20px; padding-bottom: 10px;
+  border-bottom: 2px solid var(--border);
+}
+
+/* ====== 模板卡片 ====== */
+.template-card {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--r-xl); overflow: hidden;
+  margin-bottom: 16px;
+}
+.template-header {
+  display: flex; align-items: center; gap: 12px;
+  padding: 16px 20px; cursor: pointer;
+  transition: background 0.15s;
+}
+.template-header:hover { background: var(--surface-1); }
+.template-type {
+  padding: 4px 12px; border-radius: var(--r-pill);
+  font-size: 12px; font-weight: 600; color: #fff; flex-shrink: 0;
+}
+.type-argument { background: #E8453A; }
+.type-chart { background: #3498DB; }
+.type-letter { background: #27AE60; }
+.template-title { font-weight: 600; font-size: 15px; color: var(--ink-bright); flex: 1; }
+.template-arrow {
+  font-size: 12px; color: var(--ink-muted);
+  transition: transform 0.2s;
+}
+.template-header.collapsed .template-arrow { transform: rotate(-90deg); }
+.template-body {
+  padding: 0 20px 20px;
+  display: none;
+}
+.template-header.collapsed + .template-body { display: block; }
+
+.template-part { margin-bottom: 16px; }
+.template-part:last-child { margin-bottom: 0; }
+.part-label {
+  font-size: 12px; font-weight: 600; color: var(--accent);
+  margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.5px;
+}
+.part-content {
+  background: var(--surface-1); border-radius: var(--r-md);
+  padding: 14px 16px; font-size: 14px; line-height: 1.7;
+  color: var(--ink-soft);
+}
+.hl {
+  background: rgba(243,156,18,0.15); padding: 1px 6px;
+  border-radius: 4px; font-weight: 500; color: var(--ink-bright);
+}
+
+/* ====== 句型卡片 ====== */
+.sentence-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 14px;
+}
+.sentence-card {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 16px 18px;
+  border-left: 4px solid var(--border);
+  transition: transform 0.2s, box-shadow 0.2s;
+}
+.sentence-card:hover {
+  transform: translateY(-2px); box-shadow: var(--shadow-card);
+}
+.sc-open { border-left-color: #E8453A; }
+.sc-body { border-left-color: #3498DB; }
+.sc-end { border-left-color: #27AE60; }
+.sc-tag {
+  font-size: 11px; font-weight: 600; color: var(--ink-muted);
+  margin-bottom: 6px; text-transform: uppercase;
+}
+.sc-en { font-size: 14px; font-weight: 500; color: var(--ink-bright); font-style: italic; line-height: 1.5; margin-bottom: 6px; }
+.sc-cn { font-size: 13px; color: var(--ink-muted); line-height: 1.4; }
+
+/* ====== 衔接词 ====== */
+.transition-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+.transition-group {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 16px 18px;
+}
+.transition-group h4 { font-size: 14px; margin-bottom: 10px; color: var(--ink-bright); }
+.transition-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.transition-tags span {
+  padding: 5px 12px; border-radius: var(--r-pill);
+  background: var(--surface-1); border: 1px solid var(--border);
+  font-size: 13px; color: var(--ink-soft); cursor: pointer;
+  transition: all 0.15s;
+}
+.transition-tags span:hover { border-color: var(--accent); color: var(--accent); background: rgba(232,69,58,0.05); }
+
+/* ====== 替换表 ====== */
+.replace-table-wrap { overflow-x: auto; }
+.replace-table {
+  width: 100%; border-collapse: collapse;
+  background: var(--surface-card); border-radius: var(--r-lg); overflow: hidden;
+}
+.replace-table th {
+  background: var(--surface-1); padding: 12px 18px;
+  font-size: 13px; font-weight: 700; text-align: left;
+  color: var(--ink-bright); border-bottom: 2px solid var(--border);
+}
+.replace-table td {
+  padding: 11px 18px; font-size: 14px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--ink-soft);
+}
+.replace-table tr:last-child td { border-bottom: none; }
+.replace-table tr:hover td { background: var(--surface-1); }
+.replace-table td:first-child { color: #E8453A; font-weight: 500; }
+.replace-table td:last-child { color: #27AE60; font-weight: 500; }
+
+/* ====== 误区 ====== */
+.mistake-list { display: flex; flex-direction: column; gap: 14px; }
+.mistake-card {
+  display: flex; gap: 16px; align-items: flex-start;
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 18px 20px;
+}
+.mistake-num {
+  width: 36px; height: 36px; flex-shrink: 0;
+  border-radius: 50%; background: var(--accent);
+  color: #fff; font-size: 16px; font-weight: 700;
+  display: grid; place-items: center;
+}
+.mistake-content h4 { font-size: 15px; color: var(--ink-bright); margin-bottom: 6px; }
+.mistake-content p { font-size: 13px; color: var(--ink-soft); line-height: 1.6; margin-bottom: 4px; }
+.mistake-content p:last-child { margin-bottom: 0; }
+.mistake-content code {
+  background: rgba(232,69,58,0.1); padding: 1px 6px; border-radius: 4px;
+  font-family: var(--font-mono); font-size: 12px; color: var(--accent);
+}
+
+/* ====== 策略 ====== */
+.strategy-timeline {
+  position: relative; padding-left: 100px;
+  margin-bottom: 32px;
+}
+.strategy-timeline::before {
+  content: ""; position: absolute; left: 44px; top: 0; bottom: 0;
+  width: 3px; background: linear-gradient(180deg, #E8453A, #F39C12, #27AE60);
+  border-radius: 2px;
+}
+.strategy-step {
+  position: relative; margin-bottom: 20px;
+}
+.step-time {
+  position: absolute; left: -100px; top: 2px; width: 80px;
+  font-size: 13px; font-weight: 700; color: var(--accent); text-align: right;
+}
+.step-time::after {
+  content: ""; position: absolute; right: -16px; top: 4px;
+  width: 10px; height: 10px; border-radius: 50%;
+  background: var(--accent); border: 2px solid var(--canvas);
+}
+.strategy-step:last-child .step-time::after { background: #27AE60; }
+.step-content {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 14px 18px;
+}
+.step-content h4 { font-size: 14px; color: var(--ink-bright); margin-bottom: 6px; }
+.step-content p { font-size: 13px; color: var(--ink-soft); line-height: 1.6; }
+
+.strategy-tips {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--r-xl); padding: 22px 24px;
+  border-left: 5px solid #F39C12;
+}
+.strategy-tips h4 { font-size: 16px; color: var(--ink-bright); margin-bottom: 14px; }
+.strategy-tips ul { padding-left: 20px; }
+.strategy-tips li { font-size: 14px; color: var(--ink-soft); line-height: 1.7; margin-bottom: 8px; }
+
+/* ====== 真题话题 ====== */
+.topic-year-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+  gap: 16px;
+}
+.topic-year {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 16px 18px;
+}
+.topic-year h4 { font-size: 14px; color: var(--ink-bright); margin-bottom: 10px; }
+.topic-tags { display: flex; flex-wrap: wrap; gap: 8px; }
+.topic-tags span {
+  padding: 5px 12px; border-radius: var(--r-pill);
+  background: var(--surface-1); border: 1px solid var(--border);
+  font-size: 13px; color: var(--ink-soft);
+}
+.topic-tags.hot span {
+  background: rgba(232,69,58,0.06); border-color: rgba(232,69,58,0.2);
+  color: var(--accent); font-weight: 500;
+}
+
+/* ====== 书信常用语 ====== */
+.letter-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+  gap: 16px;
+}
+.letter-group {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--r-lg); padding: 16px 18px;
+}
+.letter-group h4 { font-size: 14px; color: var(--ink-bright); margin-bottom: 10px; }
+.letter-group ul { padding-left: 18px; }
+.letter-group li { font-size: 13px; color: var(--ink-soft); line-height: 1.6; margin-bottom: 6px; }
+
+/* ====== 评分标准 ====== */
+.scoring-table td:first-child { font-size: 16px; font-weight: 700; text-align: center; }
+.score-high { color: #27AE60 !important; }
+.score-good { color: #3498DB !important; }
+.score-mid { color: #F39C12 !important; }
+.score-low { color: #E67E22 !important; }
+.score-fail { color: #E8453A !important; }
+</style>
+
+<script>
+function toggleTemplate(header) {
+  header.classList.toggle('collapsed');
+}
+// 默认展开第一个
+document.querySelector('.template-header').classList.add('collapsed');
+</script>
+{% endblock %}

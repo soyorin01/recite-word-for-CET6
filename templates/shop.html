@@ -1,0 +1,407 @@
+{% extends "base.html" %}
+
+{% block title %}喵喵商店{% endblock %}
+
+{% block content %}
+<section class="hero" style="padding-bottom: 24px;">
+  <div class="hero-inner">
+    <h1>🏪 喵喵商店</h1>
+    <p class="lead">学习赚猫粮，给月薪喵买装备！</p>
+  </div>
+</section>
+
+<section class="container shop-page">
+
+  <!-- 余额 + 好感度 -->
+  <div class="shop-balance">
+    <div class="balance-card">
+      <span class="balance-emoji">🐱🪙</span>
+      <div class="balance-info">
+        <div class="balance-label">我的猫粮</div>
+        <div class="balance-value" id="catFoodCount">0</div>
+      </div>
+    </div>
+    <div class="aff-card">
+      <span class="aff-emoji" id="affEmoji">🤍</span>
+      <div class="aff-info">
+        <div class="aff-label">好感度 <span id="affLevel">陌生</span></div>
+        <div class="aff-bar"><div class="aff-bar-inner" id="affBar" style="width:0%"></div></div>
+        <div class="aff-val"><span class="aff-value" id="affValue">0</span> / 1000</div>
+      </div>
+    </div>
+    <div class="bonus-card">
+      <div class="bonus-title">📊 装备加成</div>
+      <div class="bonus-grid">
+        <div class="bonus-item"><span>🧠 智力</span><strong id="bonusInt">0</strong></div>
+        <div class="bonus-item"><span>✨ 魅力</span><strong id="bonusCharm">0</strong></div>
+        <div class="bonus-item"><span>⚡ 精力</span><strong id="bonusEnergy">0</strong></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 赚猫粮 -->
+  <div class="earn-tips">
+    <div class="earn-title">💰 赚猫粮方式</div>
+    <div class="earn-grid">
+      <div class="earn-item"><span class="earn-emoji">📖</span>学新词 <strong>+5</strong></div>
+      <div class="earn-item"><span class="earn-emoji">✅</span>复习正确 <strong>+3</strong></div>
+      <div class="earn-item"><span class="earn-emoji">✏️</span>拼写正确 <strong>+4</strong></div>
+      <div class="earn-item"><span class="earn-emoji">🎯</span>完成一组 <strong>+8</strong></div>
+      <div class="earn-item"><span class="earn-emoji">📅</span>每日签到 <strong>+10</strong></div>
+      <div class="earn-item"><span class="earn-emoji">💬</span>和月薪喵聊天 <strong>+1</strong></div>
+      <div class="earn-item"><span class="earn-emoji">🍽</span>投喂食物 <strong>+5</strong></div>
+      <div class="earn-item"><span class="earn-emoji">❌</span>复习错误 <strong>+1</strong></div>
+    </div>
+    <button class="btn btn-primary" id="checkinBtn" onclick="shopCheckin()">📅 今日签到 +10猫粮 +5好感</button>
+  </div>
+
+  <!-- 已装备 -->
+  <div class="equipped-section">
+    <h3>🎓 月薪喵的装备</h3>
+    <div class="equipped-slots" id="equippedSlots">
+      <div class="equip-slot" data-category="hat">
+        <div class="slot-label">帽子</div>
+        <div class="slot-emoji" id="slot_hat">—</div>
+        <div class="slot-bonus" id="slot_hat_bonus"></div>
+      </div>
+      <div class="equip-slot" data-category="cloth">
+        <div class="slot-label">衣服</div>
+        <div class="slot-emoji" id="slot_cloth">—</div>
+        <div class="slot-bonus" id="slot_cloth_bonus"></div>
+      </div>
+      <div class="equip-slot" data-category="acc">
+        <div class="slot-label">配饰</div>
+        <div class="slot-emoji" id="slot_acc">—</div>
+        <div class="slot-bonus" id="slot_acc_bonus"></div>
+      </div>
+      <div class="equip-slot" data-category="food">
+        <div class="slot-label">零食</div>
+        <div class="slot-emoji" id="slot_food">—</div>
+        <div class="slot-bonus" id="slot_food_bonus"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 商品分类 -->
+  <div class="shop-tabs" id="shopTabs">
+    <button class="tab active" data-cat="all" onclick="filterShop('all')">全部</button>
+    <button class="tab" data-cat="hat" onclick="filterShop('hat')">🎩 帽子</button>
+    <button class="tab" data-cat="cloth" onclick="filterShop('cloth')">👔 衣服</button>
+    <button class="tab" data-cat="acc" onclick="filterShop('acc')">✨ 配饰</button>
+    <button class="tab" data-cat="food" onclick="filterShop('food')">🍰 零食</button>
+  </div>
+
+  <!-- 商品列表 -->
+  <div class="shop-grid" id="shopGrid">
+    <div class="shop-loading">加载中...</div>
+  </div>
+</section>
+
+<style>
+.shop-page { padding-bottom: 60px; }
+
+/* 余额 + 好感度 + 加成 */
+.shop-balance { display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 20px; }
+.balance-card {
+  display: flex; align-items: center; gap: 14px;
+  background: linear-gradient(135deg, #F9D56E 0%, #F5C842 100%);
+  padding: 18px 24px; border-radius: var(--r-xl);
+  box-shadow: 0 4px 16px rgba(245,200,66,0.3); min-width: 180px;
+}
+.balance-emoji { font-size: 32px; }
+.balance-label { font-size: 12px; color: #8B6914; font-weight: 500; }
+.balance-value { font-size: 28px; font-weight: 700; color: #5A3D00; }
+
+.aff-card {
+  display: flex; align-items: center; gap: 14px;
+  background: linear-gradient(135deg, #FFC8D0 0%, #FFB0BA 100%);
+  padding: 18px 24px; border-radius: var(--r-xl);
+  box-shadow: 0 4px 16px rgba(255,176,186,0.3); min-width: 200px;
+}
+.aff-emoji { font-size: 32px; }
+.aff-label { font-size: 12px; color: #8B4050; font-weight: 500; }
+.aff-label span { font-weight: 700; }
+.aff-bar { width: 100%; height: 8px; background: rgba(255,255,255,0.4); border-radius: 4px; overflow: hidden; margin: 6px 0 4px; }
+.aff-bar-inner { height: 100%; background: #E84393; border-radius: 4px; transition: width 0.5s ease; }
+.aff-val { font-size: 12px; color: #8B4050; }
+.aff-value { font-weight: 700; font-size: 14px; }
+
+.bonus-card {
+  flex: 1; min-width: 200px;
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--r-xl); padding: 18px 22px;
+}
+.bonus-title { font-size: 13px; font-weight: 700; color: var(--ink-bright); margin-bottom: 10px; }
+.bonus-grid { display: flex; gap: 16px; }
+.bonus-item { font-size: 13px; color: var(--ink-soft); display: flex; align-items: center; gap: 4px; }
+.bonus-item strong { color: var(--accent); font-size: 18px; }
+
+/* 赚猫粮 */
+.earn-tips {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--r-xl); padding: 18px 22px; margin-bottom: 28px;
+}
+.earn-title { font-size: 15px; font-weight: 700; color: var(--ink-bright); margin-bottom: 12px; }
+.earn-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 8px; margin-bottom: 14px; }
+.earn-item {
+  font-size: 13px; color: var(--ink-soft); padding: 6px 10px;
+  background: var(--surface-1); border-radius: var(--r-md);
+  display: flex; align-items: center; gap: 6px;
+}
+.earn-emoji { font-size: 14px; }
+.earn-item strong { color: var(--success); }
+
+/* 装备栏 */
+.equipped-section { margin-bottom: 28px; }
+.equipped-section h3 { font-size: 18px; font-weight: 700; color: var(--ink-bright); margin-bottom: 14px; }
+.equipped-slots { display: flex; gap: 14px; flex-wrap: wrap; }
+.equip-slot {
+  width: 120px; min-height: 100px;
+  background: var(--surface-card); border: 2px dashed var(--border);
+  border-radius: var(--r-xl); text-align: center;
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  padding: 10px 8px; transition: border-color 0.2s; cursor: default;
+}
+.equip-slot.has-item { border-style: solid; border-color: var(--accent); background: var(--accent-soft); cursor: pointer; }
+.slot-label { font-size: 11px; color: var(--ink-muted); margin-bottom: 4px; }
+.slot-emoji { font-size: 32px; }
+.slot-bonus { font-size: 11px; color: var(--accent); font-weight: 600; margin-top: 4px; }
+
+/* 分类标签 */
+.shop-tabs { display: flex; gap: 8px; margin-bottom: 20px; flex-wrap: wrap; }
+.shop-tabs .tab {
+  padding: 8px 18px; border-radius: var(--r-pill);
+  border: 1px solid var(--border); background: var(--surface-card);
+  font-size: 14px; color: var(--ink-muted); cursor: pointer; transition: all 0.15s;
+}
+.shop-tabs .tab.active,
+.shop-tabs .tab:hover { border-color: var(--accent); color: var(--accent); background: rgba(232,69,58,0.06); }
+
+/* 商品卡片 */
+.shop-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+  gap: 16px;
+}
+.shop-item {
+  background: var(--surface-card); border: 1px solid var(--border);
+  border-radius: var(--r-xl); padding: 18px 16px;
+  text-align: center; transition: transform 0.2s, box-shadow 0.2s;
+}
+.shop-item:hover { transform: translateY(-3px); box-shadow: var(--shadow-card); }
+.shop-item.owned { border-color: var(--success); background: rgba(39,174,96,0.04); }
+.shop-item.equipped { border-color: #F5C842; background: rgba(245,200,66,0.06); }
+.item-emoji { font-size: 40px; margin-bottom: 8px; }
+.item-name { font-size: 15px; font-weight: 700; color: var(--ink-bright); margin-bottom: 4px; }
+.item-desc { font-size: 12px; color: var(--ink-muted); margin-bottom: 8px; line-height: 1.4; }
+.item-bonus { font-size: 11px; color: var(--accent); font-weight: 600; margin-bottom: 10px; }
+.item-price { display: inline-flex; align-items: center; gap: 4px; font-size: 15px; font-weight: 700; color: #D4A020; margin-bottom: 10px; }
+.item-status { font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: var(--r-pill); display: inline-block; }
+.status-buy { background: var(--surface-1); color: var(--ink-muted); }
+.status-owned { background: rgba(39,174,96,0.1); color: var(--success); }
+.status-equipped { background: rgba(245,200,66,0.15); color: #B8860B; }
+.item-btn { margin-top: 8px; padding: 7px 18px; border-radius: var(--r-md); border: none; font-size: 13px; font-weight: 600; cursor: pointer; transition: all 0.15s; }
+.btn-buy { background: var(--accent); color: #fff; }
+.btn-buy:hover { opacity: 0.9; }
+.btn-buy:disabled { opacity: 0.4; cursor: not-allowed; }
+.btn-equip { background: #F5C842; color: #5A3D00; }
+.btn-feed { background: #27AE60; color: #fff; }
+.btn-unequip { background: var(--surface-1); color: var(--ink-muted); border: 1px solid var(--border); }
+
+@media (max-width: 640px) {
+  .shop-balance { flex-direction: column; }
+  .earn-grid { grid-template-columns: repeat(2, 1fr); }
+}
+</style>
+
+<script>
+// 使用 base.html 中的全局函数
+let currentItems = [];
+let currentFilter = 'all';
+
+function filterShop(cat) {
+  currentFilter = cat;
+  document.querySelectorAll('.shop-tabs .tab').forEach(t => {
+    t.classList.toggle('active', t.dataset.cat === cat);
+  });
+  renderShop();
+}
+
+function buyItem(item) {
+  const owned = JSON.parse(localStorage.getItem('pyword_shop') || '[]');
+  if (owned.includes(item.id)) return;
+  if (!spendCatFood(item.price)) {
+    PyWord.toast('猫粮不够啦，快去学习赚猫粮！🐱', 'error'); return;
+  }
+  owned.push(item.id);
+  localStorage.setItem('pyword_shop', JSON.stringify(owned));
+  PyWord.toast('买到了 ' + item.emoji + ' ' + item.name + '！', 'success');
+  document.getElementById('catFoodCount').textContent = getCatFood();
+  renderShop();
+}
+
+function equipItem(item) {
+  const equipped = JSON.parse(localStorage.getItem('pyword_equipped') || '{}');
+  equipped[item.category] = item.id;
+  localStorage.setItem('pyword_equipped', JSON.stringify(equipped));
+  PyWord.toast('装备了 ' + item.emoji + ' ' + item.name + '！', 'success');
+  renderShop();
+  renderEquipped();
+  updateBonus();
+}
+
+function unequipItem(category) {
+  const equipped = JSON.parse(localStorage.getItem('pyword_equipped') || '{}');
+  delete equipped[category];
+  localStorage.setItem('pyword_equipped', JSON.stringify(equipped));
+  PyWord.toast('已卸下装备', 'info');
+  renderShop();
+  renderEquipped();
+  updateBonus();
+}
+
+function bonusText(item) {
+  if (!item.bonus) return '';
+  const parts = [];
+  if (item.bonus.int) parts.push('🧠+' + item.bonus.int);
+  if (item.bonus.charm) parts.push('✨+' + item.bonus.charm);
+  if (item.bonus.energy) parts.push('⚡+' + item.bonus.energy);
+  return parts.join(' ');
+}
+
+function renderEquipped() {
+  const equipped = JSON.parse(localStorage.getItem('pyword_equipped') || '{}');
+  ['hat', 'cloth', 'acc', 'food'].forEach(cat => {
+    const slot = document.getElementById('slot_' + cat);
+    const bonus = document.getElementById('slot_' + cat + '_bonus');
+    const slotEl = slot.closest('.equip-slot');
+    if (equipped[cat]) {
+      const item = currentItems.find(i => i.id === equipped[cat]);
+      if (item) {
+        slot.textContent = item.emoji;
+        bonus.textContent = bonusText(item);
+        slotEl.classList.add('has-item');
+        slotEl.onclick = () => unequipItem(cat);
+        slotEl.title = item.name + '（点击卸下）';
+      }
+    } else {
+      slot.textContent = '—';
+      bonus.textContent = '';
+      slotEl.classList.remove('has-item');
+      slotEl.onclick = null;
+      slotEl.title = '';
+    }
+  });
+}
+
+function updateBonus() {
+  const b = getEquipBonus();
+  document.getElementById('bonusInt').textContent = b.int;
+  document.getElementById('bonusCharm').textContent = b.charm;
+  document.getElementById('bonusEnergy').textContent = b.energy;
+}
+
+function updateAffection() {
+  const val = getAffection();
+  const level = getAffLevel(val);
+  document.getElementById('affEmoji').textContent = level.emoji;
+  document.getElementById('affLevel').textContent = level.name;
+  document.getElementById('affValue').textContent = val;
+  document.getElementById('affBar').style.width = (val / 10) + '%';
+  document.getElementById('affBar').style.background = level.color;
+}
+
+// 通过索引查找商品，避免 JSON.stringify 在 onclick 中出问题
+function shopBuy(idx) { buyItem(currentItems[idx]); }
+function shopEquip(idx) { equipItem(currentItems[idx]); }
+
+// 签到并刷新商店页数据
+function shopCheckin() {
+  doCheckin();
+  document.getElementById('catFoodCount').textContent = getCatFood();
+  updateAffection();
+  const today = new Date().toISOString().slice(0, 10);
+  if (localStorage.getItem('pyword_last_checkin') === today) {
+    document.getElementById('checkinBtn').disabled = true;
+    document.getElementById('checkinBtn').textContent = '✅ 今日已签到';
+  }
+}
+
+function renderShop() {
+  const owned = JSON.parse(localStorage.getItem('pyword_shop') || '[]');
+  const equipped = JSON.parse(localStorage.getItem('pyword_equipped') || '{}');
+  const food = getCatFood();
+  const filtered = currentFilter === 'all' ? currentItems : currentItems.filter(i => i.category === currentFilter);
+
+  const grid = document.getElementById('shopGrid');
+  grid.innerHTML = filtered.map((item) => {
+    const realIdx = currentItems.indexOf(item);
+    const isOwned = owned.includes(item.id);
+    const isEquipped = equipped[item.category] === item.id;
+    const canAfford = food >= item.price;
+    const isFood = item.category === 'food';
+
+    let statusHtml, btnHtml;
+    if (isEquipped) {
+      statusHtml = '<span class="item-status status-equipped">✨ 已装备</span>';
+      btnHtml = `<button class="item-btn btn-unequip" onclick='unequipItem("${item.category}")'>卸下</button>`;
+    } else if (isOwned && isFood) {
+      statusHtml = '<span class="item-status status-owned">✅ 可投喂</span>';
+      btnHtml = `<button class="item-btn btn-feed" onclick='feedPet("${item.id}","${item.emoji}","${item.name}")'>🍽 投喂</button>`;
+    } else if (isOwned) {
+      statusHtml = '<span class="item-status status-owned">✅ 已拥有</span>';
+      btnHtml = `<button class="item-btn btn-equip" onclick="shopEquip(${realIdx})">装备</button>`;
+    } else {
+      statusHtml = `<span class="item-status status-buy">🪙 ${item.price}</span>`;
+      btnHtml = `<button class="item-btn btn-buy" ${canAfford ? '' : 'disabled'} onclick="shopBuy(${realIdx})">${canAfford ? '购买' : '猫粮不足'}</button>`;
+    }
+
+    // 食物属性行：好感度 + 属性加成
+    let attrHtml = '';
+    if (isFood) {
+      const feedAff = item.feedAff || 8;
+      const feedParts = [`💕+${feedAff}`];
+      if (item.bonus) {
+        if (item.bonus.int) feedParts.push('🧠+' + item.bonus.int);
+        if (item.bonus.charm) feedParts.push('✨+' + item.bonus.charm);
+        if (item.bonus.energy) feedParts.push('⚡+' + item.bonus.energy);
+      }
+      attrHtml = `<div class="item-bonus">${feedParts.join(' ')}</div>`;
+    } else if (item.bonus) {
+      attrHtml = `<div class="item-bonus">${bonusText(item)}</div>`;
+    }
+
+    return `
+      <div class="shop-item ${isEquipped ? 'equipped' : isOwned ? 'owned' : ''}">
+        <div class="item-emoji">${item.emoji}</div>
+        <div class="item-name">${item.name}</div>
+        <div class="item-desc">${item.desc}</div>
+        ${attrHtml}
+        ${!isOwned ? `<div class="item-price">🪙 ${item.price}</div>` : ''}
+        ${statusHtml}
+        ${btnHtml}
+      </div>
+    `;
+  }).join('');
+
+  renderEquipped();
+  updateBonus();
+  updateAffection();
+}
+
+// 初始化
+document.getElementById('catFoodCount').textContent = getCatFood();
+updateAffection();
+updateBonus();
+
+// 检查签到
+const today = new Date().toISOString().slice(0, 10);
+if (localStorage.getItem('pyword_last_checkin') === today) {
+  document.getElementById('checkinBtn').disabled = true;
+  document.getElementById('checkinBtn').textContent = '✅ 今日已签到';
+}
+
+// 加载商品
+currentItems = getAllItems();
+renderShop();
+</script>
+{% endblock %}

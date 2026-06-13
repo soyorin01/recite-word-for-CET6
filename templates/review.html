@@ -1,0 +1,253 @@
+{% extends "base.html" %}
+
+{% block title %}复习{% endblock %}
+
+{% block content %}
+<section class="hero" style="padding-bottom: 20px;">
+  <div class="hero-inner">
+    <h1>🔄 智能复习</h1>
+    <p class="lead">艾宾浩斯遗忘曲线预测的最佳复习时机。在「即将忘记」时推送，记忆效率最高。</p>
+  </div>
+</section>
+
+<div class="study-stage">
+  <!-- 复习页背景装饰 -->
+  <div class="study-bg">
+    <div class="side-orb orb-coral"></div>
+    <div class="side-orb orb-mint"></div>
+    <div class="side-orb orb-lavender"></div>
+    <div class="float-particle p1"></div>
+    <div class="float-particle p2"></div>
+    <div class="float-particle p3"></div>
+    <div class="float-particle p4"></div>
+    <div class="float-particle p5"></div>
+    <div class="float-particle p6"></div>
+    <span class="study-icon ic1">🔄</span>
+    <span class="study-icon ic2">✅</span>
+    <span class="study-icon ic3">🧩</span>
+    <span class="study-icon ic4">🌱</span>
+  </div>
+
+{% if words %}
+  <div id="reviewApp">
+  <!-- 进度条 -->
+  <div class="progress-wrap">
+    <div class="progress-bar">
+      <div class="progress-fill" id="progressBar" style="width: 0%"></div>
+    </div>
+    <div class="progress-text">
+      <span id="progressLabel">第 1 / {{ words | length }} 个</span>
+      <span>{{ words | length }} 词待复习</span>
+    </div>
+  </div>
+
+  <div id="wordCardContainer">
+    {% for word in words %}
+    <div class="word-card review-card" data-index="{{ loop.index0 }}" data-word-id="{{ word.id }}" {% if not loop.first %}style="display:none"{% endif %}>
+      <div style="text-align:center; margin-bottom:16px;">
+        <span class="mode-badge review">🔄 快速复习</span>
+      </div>
+
+      <!-- 问题面：只看单词 -->
+      <div class="review-question" id="q-{{ word.id }}">
+        <div class="word-header" style="justify-content:center; flex-direction:column; align-items:center;">
+          <div class="word-title">{{ word.word }}</div>
+          <div class="word-phonetic">
+            {{ word.phonetic_us }}
+            <button class="btn-audio" onclick="PyWord.playAudio('{{ word.word }}')">🔊</button>
+          </div>
+        </div>
+
+        <div class="choice-grid" id="choices-{{ word.id }}">
+          <!-- 选项由JS动态生成 -->
+        </div>
+      </div>
+
+      <!-- 答案面：显示释义 -->
+      <div class="review-answer" id="a-{{ word.id }}" style="display:none">
+        <div class="word-header" style="justify-content:center; flex-direction:column; align-items:center;">
+          <div class="word-title" style="font-size:28px;">{{ word.word }}</div>
+        </div>
+
+        <div class="word-meanings">
+          {% for m in word.meanings %}
+          <div class="meaning-item">
+            <span class="meaning-pos">{{ m.pos }}</span>
+            <span class="meaning-def">{{ m.def }}</span>
+          </div>
+          {% endfor %}
+        </div>
+
+        {% if word.example and word.example.sentence %}
+        <div class="example-box">
+          <div class="example-en">{{ word.example.sentence }}</div>
+          <div class="example-cn">{{ word.example.translation }}</div>
+        </div>
+        {% endif %}
+
+        <div class="action-bar">
+          <button class="btn btn-success" onclick="handleReviewResult({{ word.id }}, 'correct')">✅ 认识</button>
+          <button class="btn btn-outline" onclick="handleReviewResult({{ word.id }}, 'ambiguous')">🤔 模糊</button>
+          <button class="btn btn-warning" onclick="handleReviewResult({{ word.id }}, 'wrong')">❌ 不认识</button>
+        </div>
+      </div>
+    </div>
+    {% endfor %}
+  </div>
+  </div>
+</div>
+
+<!-- 完成状态 -->
+<div class="empty-state" id="finishState" style="display:none">
+  <div class="empty-state-icon">🎉</div>
+  <h3>复习完成！</h3>
+  <p>你已完成今日所有复习任务。根据艾宾浩斯曲线，下次复习已自动安排。</p>
+  <div class="action-bar">
+    <a href="/learn" class="btn btn-primary">去学新词</a>
+    <a href="/stats" class="btn btn-outline">查看数据</a>
+    <a href="/" class="btn btn-ghost">返回看板</a>
+  </div>
+</div>
+
+{% else %}
+<div class="empty-state">
+  <div class="empty-state-icon">✨</div>
+  <h3>暂无复习任务</h3>
+  <p>今天没有需要复习的单词，去学习一些新词吧！</p>
+  <div class="action-bar">
+    <a href="/learn" class="btn btn-primary">学新词</a>
+    <a href="/" class="btn btn-outline">返回看板</a>
+  </div>
+</div>
+{% endif %}
+{% endblock %}
+
+{% block scripts %}
+<script>
+const totalWords = {{ words | length }};
+let currentIndex = 0;
+const wordsData = {{ words | tojson }};
+
+function showWord(index) {
+  document.querySelectorAll('.review-card').forEach((card, i) => {
+    card.style.display = i === index ? 'block' : 'none';
+  });
+  const card = document.querySelector(`.review-card[data-index="${index}"]`);
+  if (card) {
+    card.classList.remove('card-exit', 'card-enter');
+    void card.offsetWidth; // 强制重排
+    card.classList.add('card-enter');
+  }
+  const pct = totalWords > 0 ? ((index) / totalWords) * 100 : 0;
+  document.getElementById('progressBar').style.width = pct + '%';
+  document.getElementById('progressLabel').textContent = `第 ${index + 1} / ${totalWords} 个`;
+}
+
+async function generateChoices(wordId) {
+  const word = wordsData.find(w => w.id === wordId);
+  if (!word) return;
+
+  let distractors = [];
+  try {
+    const res = await fetch(`/api/words/random?exclude=${wordId}&limit=3`);
+    distractors = await res.json();
+  } catch (e) {
+    distractors = wordsData.filter(w => w.id !== wordId).slice(0, 3);
+  }
+
+  const correctDef = word.meanings.map(m => m.def).join('; ');
+  const options = [
+    { text: correctDef, correct: true },
+    ...distractors.map(d => ({
+      text: d.meanings ? d.meanings.map(m => m.def).join('; ') : d.word,
+      correct: false
+    }))
+  ];
+  options.sort(() => Math.random() - 0.5);
+
+  const container = document.getElementById(`choices-${wordId}`);
+  container.innerHTML = '';
+  options.forEach(opt => {
+    const btn = document.createElement('button');
+    btn.className = 'choice-btn';
+    btn.textContent = opt.text;
+    btn.onclick = () => {
+      // 禁用所有按钮
+      container.querySelectorAll('.choice-btn').forEach(b => {
+        b.disabled = true;
+        b.style.pointerEvents = 'none';
+      });
+      if (opt.correct) {
+        btn.classList.add('correct');
+        PyWord.toast('答对了！👏', 'success');
+      } else {
+        btn.classList.add('wrong');
+        container.querySelectorAll('.choice-btn').forEach(b => {
+          if (b.textContent === correctDef) b.classList.add('correct');
+        });
+        PyWord.toast('这次没答对哦', 'warning');
+      }
+      // 显示答案面
+      setTimeout(() => {
+        document.getElementById(`q-${wordId}`).style.display = 'none';
+        document.getElementById(`a-${wordId}`).style.display = 'block';
+        document.getElementById(`a-${wordId}`).classList.add('card-enter');
+      }, 700);
+    };
+    container.appendChild(btn);
+  });
+}
+
+async function handleReviewResult(wordId, result) {
+  await PyWord.submitResult(wordId, result);
+
+  // 卡片退出动画
+  const oldCard = document.querySelector(`.review-card[data-word-id="${wordId}"]`);
+  if (oldCard) {
+    oldCard.classList.add('card-exit');
+    setTimeout(() => { oldCard.style.display = 'none'; }, 250);
+  }
+
+  setTimeout(() => {
+    currentIndex++;
+    if (currentIndex >= totalWords) {
+      document.getElementById('reviewApp').style.display = 'none';
+      document.getElementById('finishState').style.display = 'block';
+      PyWord.toast('复习完成！🎉', 'success');
+      spawnConfetti();
+    } else {
+      showWord(currentIndex);
+      const nextWord = wordsData[currentIndex];
+      if (nextWord) generateChoices(nextWord.id);
+    }
+  }, 300);
+}
+
+// 撒花
+function spawnConfetti() {
+  const container = document.createElement('div');
+  container.className = 'confetti-container';
+  document.body.appendChild(container);
+  const colors = ['#E8453A','#F39C12','#27AE60','#7B5BFF','#f7a072','#ffd166','#06d6a0','#ef476f'];
+  for (let i = 0; i < 50; i++) {
+    const p = document.createElement('div');
+    p.className = 'confetti-piece';
+    p.style.left = Math.random()*100+'%';
+    p.style.top = -(Math.random()*20)+'px';
+    p.style.background = colors[Math.floor(Math.random()*colors.length)];
+    p.style.width = (Math.random()*10+6)+'px';
+    p.style.height = (Math.random()*8+4)+'px';
+    p.style.animationDelay = Math.random()*0.8+'s';
+    p.style.animationDuration = (Math.random()*1.5+2)+'s';
+    container.appendChild(p);
+  }
+  setTimeout(() => container.remove(), 3500);
+}
+
+// 初始化
+if (totalWords > 0) {
+  showWord(0);
+  generateChoices(wordsData[0].id);
+}
+</script>
+{% endblock %}
