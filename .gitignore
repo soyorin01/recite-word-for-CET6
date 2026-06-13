@@ -30,6 +30,7 @@ Thumbs.db
 expand.py
 expand_vocab.py
 app.md
+take_screenshots.py
 
 # 根目录重复素材（已在 static/pet_assets 中）
 月薪喵.jpg

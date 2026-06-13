@@ -38,6 +38,54 @@
 
 ---
 
+## 📸 功能截图
+
+<table>
+  <tr>
+    <td align="center"><b>🏠 看板</b></td>
+    <td align="center"><b>📖 学新词</b></td>
+    <td align="center"><b>❌ 错题本</b></td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/dashboard.png" width="400"/></td>
+    <td><img src="screenshots/learn.png" width="400"/></td>
+    <td><img src="screenshots/mistakes.png" width="400"/></td>
+  </tr>
+  <tr>
+    <td align="center">学习日历、错题速览、每日名言</td>
+    <td align="center">三步学习法：选释义→详解→自评估</td>
+    <td align="center">错词收集 + 选择题/拼写练习</td>
+  </tr>
+  <tr><td colspan="3"></td></tr>
+  <tr>
+    <td align="center"><b>🐱 月薪喵</b></td>
+    <td align="center"><b>🏪 喵喵商店</b></td>
+    <td align="center"><b>✍️ 写作技巧</b></td>
+  </tr>
+  <tr>
+    <td><img src="screenshots/pet.png" width="400"/></td>
+    <td><img src="screenshots/shop.png" width="400"/></td>
+    <td><img src="screenshots/writing.png" width="400"/></td>
+  </tr>
+  <tr>
+    <td align="center">AI 对话、拖拽投喂、好感度养成</td>
+    <td align="center">赚猫粮买装备和食物</td>
+    <td align="center">5 种议论文模板 + 万能句型</td>
+  </tr>
+</table>
+
+<details>
+<summary>📸 更多截图</summary>
+
+| 🔄 复习 | ✏️ 拼写训练 | 📊 数据统计 |
+|---------|-----------|-----------|
+| <img src="screenshots/review.png" width="350"/> | <img src="screenshots/spell.png" width="350"/> | <img src="screenshots/stats.png" width="350"/> |
+| 间隔重复复习 | 针对薄弱词汇拼写 | 学习热力图与统计 |
+
+</details>
+
+---
+
 ## 🛠️ 技术栈
 
 | 技术 | 用途 |
@@ -126,22 +174,6 @@ recite-word-for-CET6/
 │   └── word_detail.html    # 单词详情
 └── README.md
 ```
-
----
-
-## 🎮 功能截图说明
-
-| 页面 | 功能 |
-|------|------|
-| 🏠 看板 | 学习日历、错题速览、每日名言、快速入口 |
-| 📖 学新词 | 三步学习法：选释义→看详解→自评估 |
-| 🔄 复习 | 基于遗忘曲线的间隔重复复习 |
-| ✏️ 拼写 | 针对薄弱词汇的拼写训练 |
-| ❌ 错题本 | 错词列表 + 选择题/拼写练习 |
-| ✍️ 写作 | 模板、句型、替换词、评分标准 |
-| 🐱 月薪喵 | AI 对话、拖拽投喂、好感度养成 |
-| 🏪 商店 | 用猫粮购买装备和食物 |
-| 📊 数据 | 学习统计图表 |
 
 ---
 
